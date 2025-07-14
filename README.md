@@ -20,7 +20,7 @@ It first compresses your *entire* static executable with [LZAV compression libra
 * [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
 * Appropriate section memory protection (with `VirtualProtect`)
 * Finally, PEB patching (e.g. `PPEB->pPeb->ImageBaseAddress = (PVOID)ntHeaders->OptionalHeader.ImageBase`)
- # Example: Packed [HxD](https://mh-nexus.de/en/hxd/) in Action
+ # Example: Packed HxD in Action
 
 ![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
 
