@@ -3,10 +3,21 @@
 
 *AlushPacker* is an advanced, high-performance executable packer for Windows PE `.exe` files, made in C.
 
-It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav) and then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly lower in size, and most importantely: all the original elements, including strings, resources, headers, and executable code are fully once packed, making reverse engineering or patching significantly more difficult.
+It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav), then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly smaller in size, and all the original resources —  strings, headers, and executable code — are fully hidden once packed, making static analysis with tools like IDA significantly more difficult.
 
-AlushPacker supports both x64 and x86, with many features like compression, encryption, locking, and much more! 
+# Features
 
+* x64 and x86 support
+* Supports native console, GUI, and legacy executables
+* File compression, encryption
+* Payload locking (if built with `-l` option, packed file will request a password before executing)
+# Technical features
+* Section headers manual mapping
+* Resolving imports (normal / delay), by name and by ordinal
+* Relocations
+* [Structured Exception Handling (SEH)](https://learn.microsoft.com/en-us/cpp/cpp/structured-exception-handling-c-cpp?view=msvc-170), registering function table in `.pdata`
+* [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
+* Appropriate section memory protection (with `VirtualProtect`)
  # Example: Packed HxD in Action
 
 ![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
