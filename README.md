@@ -5,7 +5,7 @@
 
 Example with packed HxD:
 
-https://github.com/user-attachments/assets/a1ce0822-55e0-4a9e-87e0-a9bbf09da09a
+![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
 
 
 It works by statically encrypting and compressing the entire input `.exe` payload so that it's NOT visible to static analysis tools such as IDA / HxD / CFF explorer / 010 editor.
