@@ -13,12 +13,14 @@ It first compresses your *entire* static executable with [LZAV compression libra
 * Payload locking (if built with `-l` option, packed file will request a password before executing)
 # Technical features
 * Section headers manual mapping
-* Resolving imports (normal / delay), by name and by ordinal
+* Custom WinAPI function implementations (e.g. `myGetProcAddress, `myGetModuleHandle`)
+* Resolving imports (normal / delay), by name and by ordinal, recursive support for [forwarded exports](https://devblogs.microsoft.com/oldnewthing/20060719-24/?p=30473)
 * Relocations
 * [Structured Exception Handling (SEH)](https://learn.microsoft.com/en-us/cpp/cpp/structured-exception-handling-c-cpp?view=msvc-170), registering function table in `.pdata`
 * [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
 * Appropriate section memory protection (with `VirtualProtect`)
- # Example: Packed HxD in Action
+* Finally, PEB patching (e.g. `PPEB->pPeb->ImageBaseAddress = (PVOID)ntHeaders->OptionalHeader.ImageBase`)
+ # Example: Packed [HxD](https://mh-nexus.de/en/hxd/) in Action
 
 ![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
 
