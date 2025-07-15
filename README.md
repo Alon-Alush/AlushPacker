@@ -11,6 +11,33 @@ It first compresses your *entire* static executable with [LZAV compression libra
 
 ![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
 
+# Installation and usage
+
+In order for the packed executable to run correctly on your machine, you'd need Visual C/C++ redistributables.
+
+Basic usage: `builder.exe input.exe`
+
+```
+builder.exe
+
+Alush Packer
+Copyright (C) 2025
+Alon Alush / alonalush5@gmail.com
+Usage:
+   C:\Users\tamar\source\repos\ConsoleApplication2\x64\Release\ConsoleApplication2.exe [OPTIONS] <input_file>
+Options:
+   -o <output_file>   Specify packed output file path. If not provided, writes to input directory
+   -e          Encrypt file with a random 16-byte key.
+   -c          Compress input file with LZAV, a fast general-purpose in-memory data compression algorithm
+   -l <key>    Lock the packed file with a password. Example: -l mypassword
+```
+
+Example usage: 
+
+`builder.exe "C:\Users\tamar\Downloads\brainfuck compiler\HxD.exe"`
+
+<img width="961" height="203" alt="image" src="https://github.com/user-attachments/assets/d2c79fa7-5022-4577-bf43-15424360ead5" />
+
 # Features
 
 * x64 and x86 support
