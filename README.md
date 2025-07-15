@@ -1,7 +1,46 @@
+<p align="center">
+  <a href="#">
+    <img src="https://github.com/user-attachments/assets/d56f58bc-70ef-4d57-964f-8749aa1ed921" alt="AlushPacker logo" width="800">
+  </a>
+</p>
+<h1 align="center">AlushPacker</h1>
+<p align="center">
+  <strong>Executable file packer for Windows</strong>
+</p>
+<p align="center">
+  <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=for-the-badge&color=blue" alt="License">
+  </a>
+  <a href="https://github.com/Alon-Alush/AlushPacker">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=for-the-badge&logo=c&logoColor=white&color=00599C" alt="Top Language">
+  </a>
+  <a href="https://github.com/Alon-Alush/AlushPacker/releases">
+    <img src="https://img.shields.io/github/v/release/Alon-Alush/AlushPacker?style=for-the-badge&color=green" alt="Latest Release">
+  </a>
+</p>
+<p align="center">
+  <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
+    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/Alon-Alush/AlushPacker/network/members">
+    <img src="https://img.shields.io/github/forks/Alon-Alush/AlushPacker?style=for-the-badge&color=orange" alt="GitHub Forks">
+  </a>
+  <a href="https://github.com/Alon-Alush/AlushPacker/issues">
+    <img src="https://img.shields.io/github/issues/Alon-Alush/AlushPacker?style=for-the-badge&color=red" alt="GitHub Issues">
+  </a>
+</p>
+<p align="center">
+  <a href="https://github.com/Alon-Alush/AlushPacker/commits/main">
+    <img src="https://img.shields.io/github/last-commit/Alon-Alush/AlushPacker?style=for-the-badge&color=purple" alt="Last Commit">
+  </a>
+  <a href="https://github.com/Alon-Alush/AlushPacker">
+    <img src="https://img.shields.io/github/repo-size/Alon-Alush/AlushPacker?style=for-the-badge&color=lightblue" alt="Repo Size">
+  </a>
+  <a href="https://opensource.org">
+    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=for-the-badge" alt="Open Source">
+  </a>
+</p>
 
-<img width="1280" height="168" alt="download" src="https://github.com/user-attachments/assets/d56f58bc-70ef-4d57-964f-8749aa1ed921" />
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE)
 
 *AlushPacker* is an advanced, high-performance executable packer for Windows PE `.exe` files, made in C.
 
