@@ -18,9 +18,9 @@ It first compresses your *entire* static executable with [LZAV compression libra
 # Technical features
 * Section headers manual mapping
 * Custom WinAPI / loader function implementations (e.g. `myGetProcAddress`, `myGetModuleHandle`)
-* Resolving imports (normal / delay), by name and by ordinal, recursive support for
+* Resolving imports (normal / delay-loaded), by name and by ordinal.
 * Fast export directory traversal using binary search. [Forwarded exports](https://devblogs.microsoft.com/oldnewthing/20060719-24/?p=30473) specifically are resolved using a highly reliable recursion + parsing logic in `LdrpResolveProcedureAddress`
-* Relocations
+* Relocations (in case PE image is not loaded at base address)
 * [Structured Exception Handling (SEH)](https://learn.microsoft.com/en-us/cpp/cpp/structured-exception-handling-c-cpp?view=msvc-170), registering function table in `.pdata`
 * [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
 * Appropriate section memory protection (with `VirtualProtect`)
