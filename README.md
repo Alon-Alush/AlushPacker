@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat&color=blue" alt="License">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat&logo=c&logoColor=white&color=00599C" alt="Top Language">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat&logo=c&color=red" alt="Top Language">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/releases">
     <img src="https://img.shields.io/github/v/release/Alon-Alush/AlushPacker?style=flat&color=purple" alt="Latest Release">
@@ -21,17 +21,8 @@
     <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=flat" alt="Open Source">
   </a>
 </p>
-  AlushPacker is an advanced, high-performance executable packer for Windows PE .exe files, made in C.
-    <br>
-    <a href="https://github.com/tiagorlampert/chaos/issues/new">Report bug</a>
-    ·
-    <a href="https://github.com/tiagorlampert/chaos/issues/new">Request feature</a>
-    ·
-    <a href="#quick-start">Quick start</a>
-    ·
-    <a href="#screenshots">Screenshots</a>
-</p>
 
+*AlushPacker* is an advanced, high-performance executable packer for Windows PE .exe files, made in C.
 
 
 It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav), then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly smaller in size, and all the original resources —  strings, headers, and executable code — are fully hidden once packed, making static analysis with tools like IDA significantly more difficult.
