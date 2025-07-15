@@ -1,6 +1,8 @@
 
 <img width="1280" height="168" alt="download" src="https://github.com/user-attachments/assets/d56f58bc-70ef-4d57-964f-8749aa1ed921" />
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE)
+
 *AlushPacker* is an advanced, high-performance executable packer for Windows PE `.exe` files, made in C.
 
 It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav), then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly smaller in size, and all the original resources —  strings, headers, and executable code — are fully hidden once packed, making static analysis with tools like IDA significantly more difficult.
