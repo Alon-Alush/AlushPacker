@@ -1,15 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS	
-#include <windows.h>
-#include <stdio.h>
-#include "payload.h"
-#include <shlwapi.h>
-#include "compress.h"
-#include "structs.h"
-#include "decrypt.h"
-#include <Wtsapi32.h>
-#include <winternl.h>
-#include <CRTDBG.H>
-#define ROTATE_BITS 3
 
 /**
  * @file ConsoleApplication1.c
@@ -42,6 +30,20 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+ 
+#define _CRT_SECURE_NO_WARNINGS	
+#include <windows.h>
+#include <stdio.h>
+#include "payload.h"
+#include <shlwapi.h>
+#include "compress.h"
+#include "structs.h"
+#include "decrypt.h"
+#include <Wtsapi32.h>
+#include <winternl.h>
+#include <CRTDBG.H>
+#define ROTATE_BITS 3
+
 
 typedef NTSTATUS(__stdcall* pZwAllocateVirtualMemory)(
 	HANDLE ProcessHandle,

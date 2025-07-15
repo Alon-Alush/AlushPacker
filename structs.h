@@ -1,7 +1,3 @@
-#include <windows.h>
-#include <winnt.h>
-#include <winternl.h>
-
 /**
  * @file structs.h
  *
@@ -33,6 +29,12 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+ 
+#include <windows.h>
+#include <winnt.h>
+#include <winternl.h>
+
+
 typedef struct _MYPEB
 {
     BOOLEAN InheritedAddressSpace;
