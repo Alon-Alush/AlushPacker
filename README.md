@@ -5,6 +5,10 @@
 
 It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav), then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly smaller in size, and all the original resources —  strings, headers, and executable code — are fully hidden once packed, making static analysis with tools like IDA significantly more difficult.
 
+ # Example: Packed HxD in Action
+
+![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
+
 # Features
 
 * x64 and x86 support
@@ -20,7 +24,4 @@ It first compresses your *entire* static executable with [LZAV compression libra
 * [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
 * Appropriate section memory protection (with `VirtualProtect`)
 * Finally, PEB patching (e.g. `PPEB->pPeb->ImageBaseAddress = (PVOID)ntHeaders->OptionalHeader.ImageBase`)
- # Example: Packed HxD in Action
-
-![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
 
