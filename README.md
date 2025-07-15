@@ -7,7 +7,7 @@ It first compresses your *entire* static executable with [LZAV compression libra
 
  # Example: Packed HxD in Action
 
-![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
+<img src="https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7" style="transform: scale(2); transform-origin: top left;" />
 
 # Features
 
