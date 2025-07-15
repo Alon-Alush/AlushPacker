@@ -12,13 +12,14 @@ It first compresses your *entire* static executable with [LZAV compression libra
 # Features
 
 * x64 and x86 support
-* Supports native console, GUI, and legacy executables
+* Native console, GUI, and legacy EXE support
 * File compression, encryption
-* Payload locking (if built with `-l` option, packed file will request a password before executing)
+* Payload locking (if built with `-l` option, output file will request a password before executing)
 # Technical features
 * Section headers manual mapping
-* Custom WinAPI function implementations (e.g. `myGetProcAddress, `myGetModuleHandle`)
-* Resolving imports (normal / delay), by name and by ordinal, recursive support for [forwarded exports](https://devblogs.microsoft.com/oldnewthing/20060719-24/?p=30473)
+* Custom WinAPI / loader function implementations (e.g. `myGetProcAddress`, `myGetModuleHandle`)
+* Resolving imports (normal / delay), by name and by ordinal, recursive support for
+* Exports, and specifically [forwarded exports](https://devblogs.microsoft.com/oldnewthing/20060719-24/?p=30473) are resolved using a highly reliable recursion + parsing logic in `LdrpResolveProcedureAddress`
 * Relocations
 * [Structured Exception Handling (SEH)](https://learn.microsoft.com/en-us/cpp/cpp/structured-exception-handling-c-cpp?view=msvc-170), registering function table in `.pdata`
 * [Thread Local Storage](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-local-storage) (TLS callbacks) support
