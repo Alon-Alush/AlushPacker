@@ -21,18 +21,7 @@
 <p align="center">
   <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
     <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
-  </a>
-  <a href="https://github.com/Alon-Alush/AlushPacker/network/members">
-    <img src="https://img.shields.io/github/forks/Alon-Alush/AlushPacker?style=for-the-badge&color=orange" alt="GitHub Forks">
-  </a>
-  <a href="https://github.com/Alon-Alush/AlushPacker/issues">
-    <img src="https://img.shields.io/github/issues/Alon-Alush/AlushPacker?style=for-the-badge&color=red" alt="GitHub Issues">
-  </a>
-</p>
-<p align="center">
-  <a href="https://github.com/Alon-Alush/AlushPacker/commits/main">
-    <img src="https://img.shields.io/github/last-commit/Alon-Alush/AlushPacker?style=for-the-badge&color=purple" alt="Last Commit">
-  </a>
+     </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
     <img src="https://img.shields.io/github/repo-size/Alon-Alush/AlushPacker?style=for-the-badge&color=lightblue" alt="Repo Size">
   </a>
