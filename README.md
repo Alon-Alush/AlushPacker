@@ -29,7 +29,8 @@ It first compresses your *entire* static executable with [LZAV compression libra
 
  # Example: Packed HxD in Action
 
-![Animation](https://github.com/user-attachments/assets/09efedd6-6a3a-43ce-9bfe-2d7816cf01b7)
+![Animation](https://github.com/user-attachments/assets/bc89a043-370b-49f7-98bf-c46fc17e4107)
+
 
 # Installation and usage
 
