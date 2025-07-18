@@ -1,0 +1,3 @@
+﻿  ConsoleApplication2.c
+C:\Users\tamar\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.c(92,36): error C2075: 'inputPath': initialization requires a brace-enclosed initializer list
+C:\Users\tamar\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.c(93,37): error C2075: 'outputPath': initialization requires a brace-enclosed initializer list

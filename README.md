@@ -48,8 +48,6 @@ Usage:
    C:\Users\tamar\source\repos\ConsoleApplication2\x64\Release\ConsoleApplication2.exe [OPTIONS] <input_file>
 Options:
    -o <output_file>   Specify packed output file path. If not provided, writes to input directory
-   -e          Encrypt file with a random 16-byte key.
-   -c          Compress input file with LZAV, a fast general-purpose in-memory data compression algorithm
    -l <key>    Lock the packed file with a password. Example: -l mypassword
 ```
 
