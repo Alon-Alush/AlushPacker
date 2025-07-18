@@ -34,7 +34,7 @@ It first compresses your *entire* static executable with [LZAV compression libra
 
 # Installation and usage
 
-In order for the packed executable to run correctly on your machine, you'd need Visual C/C++ redistributables.
+The easiest and simplest way to pack your files with AlushPacker is to download the [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/release).
 
 Basic usage: `packer.exe input.exe`
 
@@ -53,7 +53,7 @@ Options:
 
 Example usage: 
 
-`builder.exe "C:\Users\tamar\Downloads\brainfuck compiler\HxD.exe"`
+`packer.exe "C:\Users\tamar\Downloads\HxD.exe"`
 
 <img width="961" height="203" alt="image" src="https://github.com/user-attachments/assets/d2c79fa7-5022-4577-bf43-15424360ead5" />
 

@@ -30,7 +30,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <wininet.h>
@@ -44,6 +43,30 @@
 #include <intrin.h>
 #pragma comment(lib, "wininet.lib")
 
+#define ALIGN_UP(x, align) ((x) & -(align))
+// align x up to the nearest multiple of align. align must be a power of 2.
+#define P2ALIGNUP(x, align) (-(-(x) & -(align)))
+
+//typedef NTSTATUS(*NtWriteFile)(
+//    HANDLE FileHandle,
+//    HANDLE Event,
+//    PVOID Buffer,
+//    ULONG Length,
+//    PLARGE_INTEGER ByteOffset,
+//    PULONG Key
+
+//    );
+
+//size_t ffwrite(const void* buffer, size_t ElementSize, size_t ElementCount, FILE* stream) {
+//    DWORD bytesWritten = 0;
+//    // fast fwrite, uses WriteFile directly
+//    NtWriteFile fastwrite = (NtWriteFile)GetProcAddress("ntdll.dll", "WriteFile");
+//    if (fastwrite == NULL) {
+//        return 0;
+//    }
+ //   NTSTATUS status = fastwrite(stream, ElementCount, )
+//
+//}
 DWORD align_value(DWORD valueToAlign, DWORD alignment) {
     DWORD r = valueToAlign % alignment;
     return r ? valueToAlign + (alignment - r) : valueToAlign;
@@ -79,12 +102,32 @@ BYTE* addSectionToInputFile(BYTE* inputFile, int inputFileSize, packed_section* 
     newSection->NumberOfRelocations = 0;
     newSection->NumberOfLinenumbers = 0;
     newSection->Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_CNT_INITIALIZED_DATA;
-    printf("%p", &ntHeaders->OptionalHeader.SizeOfImage);
     ntHeaders->OptionalHeader.SizeOfImage = align_value(newSection->VirtualAddress + newSection->Misc.VirtualSize, sectionAlignment);
     memcpy((void*)((DWORD_PTR)imageBase + newSection->PointerToRawData), packedSection, packedSectionSize);
-    printf("pasted your data at %p, of size %u\n", (void*)((DWORD_PTR)imageBase + newSection->PointerToRawData), packedSectionSize);
     *writeSize = newSection->PointerToRawData + newSection->SizeOfRawData;
     return resizedInput;
+
+}
+int downloadFile(const char* url, const char* savePath) {
+    DWORD bytesRead = 0;
+    DWORD bytesToRead = 4455568;
+    unsigned char* fileData = malloc(bytesToRead);
+    if (fileData == NULL) {
+        fprintf(stderr, "Error: Could not allocate space for target file!\n");
+        return 1;
+    }
+    HINTERNET hOpen = InternetOpenA("WebReader", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+    HINTERNET hUrl = InternetOpenUrlA(hOpen, url, NULL, 0, 0, 0);
+
+    BOOL flag = InternetReadFile(hUrl, fileData, bytesToRead, &bytesRead);
+    if (flag == FALSE) {
+        return 1;
+    }
+    FILE* fp = fopen(savePath, "wb");
+    size_t size = fwrite(fileData, 1, bytesToRead, fp);
+    fclose(fp);
+    free(fileData);
+    return 0;
 
 }
 
