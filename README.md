@@ -36,10 +36,10 @@ It first compresses your *entire* static executable with [LZAV compression libra
 
 In order for the packed executable to run correctly on your machine, you'd need Visual C/C++ redistributables.
 
-Basic usage: `builder.exe input.exe`
+Basic usage: `packer.exe input.exe`
 
 ```
-builder.exe
+packer.exe
 
 Alush Packer
 Copyright (C) 2025
