@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat&logo=c&color=red" alt="Top Language">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/releases">
-    <img src="https://img.shields.io/github/v/release/Alon-Alush/AlushPacker?style=flat&color=purple" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=flat&color=purple" alt="Latest Release">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
     <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=flat&color=yellow" alt="GitHub Stars">
