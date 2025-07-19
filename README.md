@@ -22,10 +22,9 @@
   </a>
 </p>
 
-*AlushPacker* is an advanced, high-performance executable packer for Windows PE .exe files, made in C.
+*AlushPacker* is a reflective PE packer that allows in-memory execution of native `.exe` files. The compressed + encrypted version of the original executable is embedded inside a new `.packed` section. At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
-
-It first compresses your *entire* static executable with [LZAV compression library](https://github.com/avaneev/lzav), then encrypts it with a custom TEA-32 encryption implementation. The resulting packed file manually maps and loads itself at runtime. It is significantly smaller in size, and all the original resources —  strings, headers, and executable code — are fully hidden once packed, making static analysis with tools like IDA significantly more difficult.
+The final resulting binary is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
 
  # Example: Packed HxD in Action
 
