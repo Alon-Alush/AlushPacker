@@ -30,7 +30,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#define _CRT_SECURE_NO_WARNINGS
+
+ #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <wininet.h>
 #include <stdio.h>
@@ -47,37 +48,34 @@
 // align x up to the nearest multiple of align. align must be a power of 2.
 #define P2ALIGNUP(x, align) (-(-(x) & -(align)))
 
-//typedef NTSTATUS(*NtWriteFile)(
-//    HANDLE FileHandle,
-//    HANDLE Event,
-//    PVOID Buffer,
-//    ULONG Length,
-//    PLARGE_INTEGER ByteOffset,
-//    PULONG Key
-
-//    );
-
-//size_t ffwrite(const void* buffer, size_t ElementSize, size_t ElementCount, FILE* stream) {
-//    DWORD bytesWritten = 0;
-//    // fast fwrite, uses WriteFile directly
-//    NtWriteFile fastwrite = (NtWriteFile)GetProcAddress("ntdll.dll", "WriteFile");
-//    if (fastwrite == NULL) {
-//        return 0;
-//    }
- //   NTSTATUS status = fastwrite(stream, ElementCount, )
-//
-//}
 DWORD align_value(DWORD valueToAlign, DWORD alignment) {
     DWORD r = valueToAlign % alignment;
     return r ? valueToAlign + (alignment - r) : valueToAlign;
 }
-BYTE* addSectionToInputFile(BYTE* inputFile, int inputFileSize, packed_section* packedSection, DWORD packedSectionSize, int* writeSize) {
-    
-    DWORD newSectionSize = packedSectionSize;
-    BYTE* resizedInput = realloc(inputFile, (size_t)inputFileSize + newSectionSize);
+
+size_t determineWriteSize(LPVOID imageBase, size_t inputFileSize, DWORD packedSectionSize) {
+
+    IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
+    IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
+    IMAGE_FILE_HEADER* fileHeader = &ntHeaders->FileHeader;
+    IMAGE_SECTION_HEADER* firstSection = IMAGE_FIRST_SECTION(ntHeaders);
+    WORD numSections = fileHeader->NumberOfSections;
+    DWORD sectionAlignment = ntHeaders->OptionalHeader.SectionAlignment;
+    DWORD fileAlignment = ntHeaders->OptionalHeader.FileAlignment;
+    size_t sectionSize = sizeof(IMAGE_SECTION_HEADER);
+
+    IMAGE_SECTION_HEADER* lastSection = &firstSection[numSections - 1];
+
+    return (size_t)align_value(lastSection->PointerToRawData + lastSection->SizeOfRawData, fileAlignment) + align_value(packedSectionSize, fileAlignment);
+}
+
+BYTE* addSectionToInputFile(BYTE* inputFile, size_t inputFileSize, packed_section* packedSection, DWORD packedSectionSize, size_t writeSize) {
+
+    BYTE* resizedInput = malloc(writeSize);
     if (resizedInput == NULL) {
         return NULL;
     }
+    memcpy(resizedInput, inputFile, inputFileSize);
     LPVOID imageBase = (LPVOID)resizedInput;
     IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)resizedInput);
     IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
@@ -93,8 +91,8 @@ BYTE* addSectionToInputFile(BYTE* inputFile, int inputFileSize, packed_section* 
     unsigned char name[] = ".packed";
     fileHeader->NumberOfSections += 0x01;
     memcpy(newSection->Name, name, sizeof(name));
-    newSection->Misc.VirtualSize = newSectionSize;
-    newSection->SizeOfRawData = align_value(newSectionSize, fileAlignment);
+    newSection->Misc.VirtualSize = packedSectionSize;
+    newSection->SizeOfRawData = align_value(packedSectionSize, fileAlignment);
     newSection->PointerToRawData = align_value(lastSection->PointerToRawData + lastSection->SizeOfRawData, fileAlignment);
     newSection->PointerToRelocations = 0;
     newSection->PointerToLinenumbers = 0;
@@ -104,34 +102,10 @@ BYTE* addSectionToInputFile(BYTE* inputFile, int inputFileSize, packed_section* 
     newSection->Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_CNT_INITIALIZED_DATA;
     ntHeaders->OptionalHeader.SizeOfImage = align_value(newSection->VirtualAddress + newSection->Misc.VirtualSize, sectionAlignment);
     memcpy((void*)((DWORD_PTR)imageBase + newSection->PointerToRawData), packedSection, packedSectionSize);
-    *writeSize = newSection->PointerToRawData + newSection->SizeOfRawData;
     return resizedInput;
-
-}
-int downloadFile(const char* url, const char* savePath) {
-    DWORD bytesRead = 0;
-    DWORD bytesToRead = 4455568;
-    unsigned char* fileData = malloc(bytesToRead);
-    if (fileData == NULL) {
-        fprintf(stderr, "Error: Could not allocate space for target file!\n");
-        return 1;
-    }
-    HINTERNET hOpen = InternetOpenA("WebReader", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-    HINTERNET hUrl = InternetOpenUrlA(hOpen, url, NULL, 0, 0, 0);
-
-    BOOL flag = InternetReadFile(hUrl, fileData, bytesToRead, &bytesRead);
-    if (flag == FALSE) {
-        return 1;
-    }
-    FILE* fp = fopen(savePath, "wb");
-    size_t size = fwrite(fileData, 1, bytesToRead, fp);
-    fclose(fp);
-    free(fileData);
-    return 0;
-
 }
 
-BYTE* processFile(FILE* fp, int *size) {
+BYTE* processFile(FILE* fp, DWORD *size) {
     fseek(fp, 0, SEEK_END);
     *size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -291,12 +265,10 @@ int main(int argc, char* argv[]) {
         memcpy(extension, append, sizeof(append));
     }
     // now outputpath should contain a valid path to write to
-    int fileSize = 0;
+    DWORD fileSize = 0;
     BYTE* inputFile = processFile(inputfp, &fileSize);
     // size contains size of input file
     int packed_size = 0;
-    int sizetowrite = 0;
-    printf("%p %p", inputFile, inputfp);
     if (inputFile == NULL) {
         return 1;
     }
@@ -317,11 +289,20 @@ int main(int argc, char* argv[]) {
     packedSection->packed_size = packed_size;
     memcpy(packedSection->payload, packedPayload, packed_size);
     unsigned char* dynamicStub = malloc(stub_size);
+
+    if (!dynamicStub) {
+        return 1;
+    }
+    size_t writeSize = determineWriteSize(precompiled_unpacker_x64, stub_size, packedSectionSize);
     memcpy(dynamicStub, precompiled_unpacker_x64, stub_size);
-    BYTE* toWrite = addSectionToInputFile(dynamicStub, stub_size, (LPVOID)packedSection, packedSectionSize, &sizetowrite);
+    BYTE* toWrite = addSectionToInputFile(dynamicStub, stub_size, (LPVOID)packedSection, packedSectionSize, writeSize);
     outputfp = fopen(outputPath, "wb");
-    fwrite(toWrite, sizeof(char), sizetowrite, outputfp);
-    //fclose(outputfp);
+    if (!outputfp) {
+        return 1;
+    }
+    
+    fwrite(toWrite, sizeof(char), writeSize, outputfp);
+    fclose(outputfp);
     printf("Successfully saved payload to %s\n", outputPath);
 
 
