@@ -53,9 +53,10 @@ Options:
 ```
 
 **Example usage:**
-- Generate reflective payload
-
-`packer.exe "C:\Users\tamar\Downloads\HxD.exe"`
+- Generate packed executable
+```
+packer.exe "C:\Users\tamar\Downloads\HxD.exe"
+```
 
 <img width="961" height="203" alt="image" src="https://github.com/user-attachments/assets/d2c79fa7-5022-4577-bf43-15424360ead5" />
 
