@@ -76,3 +76,9 @@ Options:
 * Appropriate section memory protection (with `VirtualProtect`)
 * Finally, PEB patching (e.g. `PPEB->pPeb->ImageBaseAddress = (PVOID)ntHeaders->OptionalHeader.ImageBase`)
 
+# Contributing
+
+Contributions to the project are welcome!
+
+You can improve parts of the code, report bugs, or just suggest features you think would be cool to add. I will review your suggestions and approve them if they step the project towards a better place :)
+
