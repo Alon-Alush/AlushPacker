@@ -28,7 +28,7 @@
 
 The final resulting binary is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
 
- # Example: launching the reflective payload
+ # Demo
 
 ![Animation](https://github.com/user-attachments/assets/bc89a043-370b-49f7-98bf-c46fc17e4107)
 
