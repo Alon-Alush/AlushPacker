@@ -1,37 +1,4 @@
-
-/**
- * @file ConsoleApplication2.c
- * 
- * Purpose: Assembling the final packed executable using precompiled stub
- *
- * Description is available at https://github.com/Alon-Alush/AlushPacker
- *
- * E-mail: alonalush5@gmail.com
- *
- * LICENSE:
- *
- * Copyright (c) 2025 Alon Alush
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
- #define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <wininet.h>
 #include <stdio.h>
@@ -288,13 +255,31 @@ int main(int argc, char* argv[]) {
     packedSection->unpacked_size = fileSize;
     packedSection->packed_size = packed_size;
     memcpy(packedSection->payload, packedPayload, packed_size);
-    unsigned char* dynamicStub = malloc(stub_size);
 
+    IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)inputFile;
+
+    IMAGE_NT_HEADERS* ntHeaders = (IMAGE_DOS_HEADER*)inputFile;
+    unsigned char* precompiled_unpacker = NULL;
+    size_t stub_size = 0;
+    if (ntHeaders->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        // 64-bit
+        stub_size = stub_size_x64;
+        precompiled_unpacker = precompiled_unpacker_x64;
+    }
+    else {
+        // 32-bit
+
+        stub_size = stub_size_x86;
+        precompiled_unpacker = precompiled_unpacker_x86;
+    }
+
+    unsigned char* dynamicStub = malloc(stub_size);
     if (!dynamicStub) {
         return 1;
     }
-    size_t writeSize = determineWriteSize(precompiled_unpacker_x64, stub_size, packedSectionSize);
-    memcpy(dynamicStub, precompiled_unpacker_x64, stub_size);
+    
+    size_t writeSize = determineWriteSize(precompiled_unpacker, stub_size, packedSectionSize);
+    memcpy(dynamicStub, precompiled_unpacker, stub_size);
     BYTE* toWrite = addSectionToInputFile(dynamicStub, stub_size, (LPVOID)packedSection, packedSectionSize, writeSize);
     outputfp = fopen(outputPath, "wb");
     if (!outputfp) {
