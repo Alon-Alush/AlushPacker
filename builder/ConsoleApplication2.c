@@ -256,9 +256,9 @@ int main(int argc, char* argv[]) {
     packedSection->packed_size = packed_size;
     memcpy(packedSection->payload, packedPayload, packed_size);
 
-    IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)inputFile;
+    IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)inputFile);
 
-    IMAGE_NT_HEADERS* ntHeaders = (IMAGE_DOS_HEADER*)inputFile;
+    IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)inputFile + dosHeader->e_lfanew);
     unsigned char* precompiled_unpacker = NULL;
     size_t stub_size = 0;
     if (ntHeaders->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
