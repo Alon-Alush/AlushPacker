@@ -46,19 +46,16 @@ Alush Packer
 Copyright (C) 2025
 Alon Alush / alonalush5@gmail.com
 Usage:
-   C:\Users\tamar\source\repos\ConsoleApplication2\x64\Release\ConsoleApplication2.exe [OPTIONS] <input_file>
+   packer [OPTIONS] <input_file>
 Options:
    -o <output_file>   Specify packed output file path. If not provided, writes to input directory
    -l <key>    Lock the packed file with a password. Example: -l mypassword
 ```
 
-**Example usage:**
-- Generate packed executable
-```
-packer.exe "C:\Users\tamar\Downloads\HxD.exe"
-```
+**Demo usage:**
 
-<img width="961" height="203" alt="image" src="https://github.com/user-attachments/assets/d2c79fa7-5022-4577-bf43-15424360ead5" />
+![Animation1](https://github.com/user-attachments/assets/1a8d9070-cb03-448f-90b1-69191beea82e)
+
 
 # Features
 
