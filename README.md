@@ -46,7 +46,7 @@ Alush Packer
 Copyright (C) 2025
 Alon Alush / alonalush5@gmail.com
 Usage:
-   packer [OPTIONS] <input_file>
+   packer.exe [OPTIONS] <input_file>
 Options:
    -o <output_file>   Specify packed output file path. If not provided, writes to input directory
    -l <key>    Lock the packed file with a password. Example: -l mypassword
