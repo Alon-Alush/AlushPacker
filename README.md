@@ -35,7 +35,7 @@ The resulting executable is smaller in size, and is much harder to statically an
 
 # Installation and usage
 
-Download the [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/release) to get started.
+Download the [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0) to get started.
 
 Basic usage: `packer.exe input.exe`
 
