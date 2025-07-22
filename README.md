@@ -1,24 +1,24 @@
 <p align="center">
-  <a href="#">
-    <img src="https://github.com/user-attachments/assets/d56f58bc-70ef-4d57-964f-8749aa1ed921" alt="AlushPacker logo" width="800">
+    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" width = 800/>
+
   </a>
 </p>
 <h1 align="center">AlushPacker: Executable file packer for Windows</h1>
 <p align="center">
   <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=for-the-badge&color=blue" alt="License">
+    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=for-the-badge&logo=c&color=red" alt="Top Language">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/releases">
-    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=for-the-badge&color=purple" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=flat-square&color=purple" alt="Latest Release">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
-    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
+    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=flat-square&color=yellow" alt="GitHub Stars">
   </a>
   <a href="https://opensource.org">
-    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=for-the-badge" alt="Open Source">
+    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=flat-square" alt="Open Source">
   </a>
 </p>
 
