@@ -1,6 +1,5 @@
 <p align="center">
-    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" width = 800/>
-
+    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" alt ="Banner"/>
   </a>
 <h1 align="center">AlushPacker: Executable file packer for Windows</h1>
 <p align="center">
