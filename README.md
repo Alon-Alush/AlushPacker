@@ -9,17 +9,22 @@
 
 ## Introduction
 
+
 *AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
+
+<img width="976" height="514" alt="image" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
 
 # How it works
 
+
+A new `.packed` section header is first created inside the packer stub:
+
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
-A new, `.packed` section header is first created inside the packer stub. It will store the encoded contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation
+This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
 
-At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader:
+At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
-<img width="976" height="514" alt="image" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
 
 # Showcase: (IDA Pro):
 
@@ -32,13 +37,18 @@ At runtime, the unpacker stub decrypts those contents, and manually loads the ex
 
 The packer binaries can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
 
-To pack a program, you must specify its *input name*. Optionally, you can specify the *output name* to write to.
+## Usage
+
+To pack a program, you generally specify its *input name* and *output name*. If an *output name* is not provided, the packed file will automatically be written to the input directory with a `_packed` filename extension.
 
 For example: 
 
 ```
 packer <input_file> <output_file>
 ```
+
+Here's the full usage:
+
 ```
 > packer.exe
 
