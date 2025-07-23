@@ -1,5 +1,5 @@
 
-<h1>AlushPacker: Executable file packer for Windows</h1>
+# AlushPacker: *PE packer* for *Windows*</h1>
   <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
   </a>
@@ -7,31 +7,38 @@
     <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
   </a>
 
-# Introduction
+## Introduction
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
 
-The encrypted + compressed version of the original executable is first stored inside a new `.packed` section:
+# How it works
 
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
+A new, `.packed` section header is first created inside the packer stub. It will store the encoded contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation
+
+At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader:
+
+<img width="976" height="514" alt="image" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
+
+# Showcase: (IDA Pro):
+
+- Encrypted strings:
+
+<img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
 
 
-At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+# Getting started
 
-The resulting executable is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
+The packer binaries can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
 
-Showcase: Encrypted strings (IDA Pro):
+To pack a program, you must specify its *input name*. Optionally, you can specify the *output name* to write to.
 
-<img width="311" height="699" alt="image" src="https://github.com/user-attachments/assets/fed41c59-390f-4d7f-85cd-6c5c0332ce39" />
+For example: 
 
-
-# Installation and usage
-
-Download the [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0) to get started.
-
-Basic usage: `packer.exe input.exe`
-
+```
+packer <input_file> <output_file>
+```
 ```
 > packer.exe
 
@@ -44,11 +51,6 @@ Options:
    -o <output_file>   Specify packed output file path. If not provided, writes to input directory
    -l <key>    Lock the packed file with a password. Example: -l mypassword
 ```
-
-**Demo usage:**
-
-![Animation1](https://github.com/user-attachments/assets/1a8d9070-cb03-448f-90b1-69191beea82e)
-
 
 # Features
 
