@@ -1,3 +1,0 @@
-﻿  ConsoleApplication2.c
-C:\Users\tamar\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.c(291,56): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
-  ConsoleApplication2.vcxproj -> C:\Users\tamar\source\repos\ConsoleApplication2\x64\Debug\ConsoleApplication2.exe
