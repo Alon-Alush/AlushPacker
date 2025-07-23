@@ -39,7 +39,9 @@ The packer binaries can be downloaded here: [latest release binaries](https://gi
 
 ## Usage
 
-To pack a program, you generally specify its *input name* and *output name*. If an *output name* is not provided, the packed file will automatically be written to the input directory with a `_packed` filename extension.
+To pack a program, you generally specify its *input name*, and the packed file will automatically be written to the input directory with a `_packed` filename extension.
+
+Optionally, you can specify an *output name* directly.
 
 For example: 
 
