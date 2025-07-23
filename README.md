@@ -1,34 +1,29 @@
-<p align="center">
-    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" alt ="Banner"/>
-  </a>
-<h1 align="center">AlushPacker: Executable file packer for Windows</h1>
-<p align="center">
+
+<h1>AlushPacker: Executable file packer for Windows</h1>
   <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=for-the-badge&color=blue" alt="License">
+    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=for-the-badge&logo=c&color=red" alt="Top Language">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
   </a>
-  <a href="https://github.com/Alon-Alush/AlushPacker/releases">
-    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=for-the-badge&color=purple" alt="Latest Release">
-  </a>
-  <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
-    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
-  </a>
-  <a href="https://opensource.org">
-    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=for-the-badge" alt="Open Source">
-  </a>
-</p>
 
 # Introduction
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The compressed + encrypted contents of the original executable are first embedded inside a new `.packed` section. At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files.
+
+The encrypted + compressed version of the original executable is first stored inside a new `.packed` section:
+
+<img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
+
+
+
+At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 The resulting executable is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
 
- # Demo
+Showcase: Encrypted strings (IDA Pro):
 
-![Animation](https://github.com/user-attachments/assets/bc89a043-370b-49f7-98bf-c46fc17e4107)
+<img width="311" height="699" alt="image" src="https://github.com/user-attachments/assets/fed41c59-390f-4d7f-85cd-6c5c0332ce39" />
 
 
 # Installation and usage
