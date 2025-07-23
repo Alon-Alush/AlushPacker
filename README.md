@@ -17,13 +17,13 @@
 # How it works
 
 
-A new `.packed` section header is first created inside the packer stub:
+A new `.packed` section header is first created inside the new, packed file:
 
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
 This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
 
-At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 
 # Showcase: (IDA Pro):
