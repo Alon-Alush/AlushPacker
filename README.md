@@ -26,7 +26,7 @@
 
 At runtime, the unpacker stub (reflective loader) locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
-# Packed file (overview)
+# Demo
 
 ### Encrypted strings (IDA Pro):
 
@@ -35,7 +35,7 @@ At runtime, the unpacker stub (reflective loader) locates this section within it
 ### Detect-It-Easy analysis:
 <img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
 
- # Demo (running the packed executable)
+ ### Running the packed executable
 
 ![Running the packed file](https://github.com/user-attachments/assets/40ce8bab-492e-4a7d-b8c2-3f8529ff5a50)
 
