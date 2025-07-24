@@ -33,11 +33,11 @@
 
 # How it works
 
-[The builder](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/builder.c) creates new `.packed` section header that stores the packed contents version of the original executable, after it has been compressed with the [LZAV](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/lzav.h) compression library, and encrypted using a [custom implementation](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/encrypt.h) of [XTEA](https://en.wikipedia.org/wiki/XTEA) (eXtended Tiny Encryption Algorithm) block cypher.
+The [builder](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/builder.c) creates new `.packed` section header that stores the packed version of the original executable, that is, after it has been compressed with the [LZAV](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/lzav.h) compression library, and encrypted using a [custom implementation](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/encrypt.h) of [XTEA](https://en.wikipedia.org/wiki/XTEA) (eXtended Tiny Encryption Algorithm) block cypher.
 
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
-At runtime, the [reflective loader](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Packer/loader.c) locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+At runtime, the [reflective loader](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Packer/loader.c) locates  the base address of this section (which is embedded within itself), decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 # Showcase
 
@@ -49,7 +49,7 @@ In the packed version, the original executable's data is stored, well.. packed, 
 
 ### Detect-It-Easy analysis:
 
-`Detect-It-Easy` has detected our packed section due to the high entropy. However, this detection can be bypassed by putting the payload inside a static C buffer, which you can do by compiling from source. To make the building straightforward, we use a precompiled stub that locates the packed data inside a separate section.
+*Detect-It-Easy* has detected our packed section due to the high entropy. However, this detection can be bypassed by placing the packed data inside `payload.h`, and having the reflective loader operate on this data directly (instead of writing this packed data to a separate section header). You can do this by compiling from source, setting the `DEBUG_STUB` macro, and placing the packed data inside `payload.h`. But, this requires a more "hacky approach", so to make the build process more straightforward, we place the packed data inside a separate section header.
 
 <img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
 
