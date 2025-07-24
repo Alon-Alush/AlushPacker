@@ -49,7 +49,7 @@ In the packed version, the original executable's data is stored, well.. packed, 
 
 ### Detect-It-Easy analysis:
 
-*Detect-It-Easy* has detected our packed section due to the high entropy. However, this detection can be bypassed by placing the packed data inside `payload.h`, and having the reflective loader operate on this data directly (instead of writing this packed data to a separate section header). You can do this by compiling from source, setting the `DEBUG_STUB` macro, and placing the packed data inside `payload.h`. But, this requires a more "hacky approach", so to make the build process more straightforward, we place the packed data inside a separate section header.
+*Detect-It-Easy* has detected that our executable is packed due to the high entropy in the `.packed` section. However, this detection can be bypassed by placing the packed data inside `payload.h` instead of writing this packed data to a separate section header. You can do this by compiling from source, setting the `DEBUG_STUB` macro, and placing the packed data inside `payload.h`. But, this requires a more "hacky approach", so to make the build process more straightforward, we place the packed data inside a separate section header.
 
 <img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
 
