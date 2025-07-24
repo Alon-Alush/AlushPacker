@@ -1,22 +1,19 @@
-<p align="center">
-    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" alt ="Banner"/>
-  </a>
-<h1 align="center">AlushPacker: Executable file packer for Windows</h1>
-<p align="center">
+
+<h1>AlushPacker: Executable file packer for Windows</h1>
   <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=for-the-badge&color=blue" alt="License">
+    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=for-the-badge&logo=c&color=red" alt="Top Language">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/releases">
-    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=for-the-badge&color=purple" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=flat-square&color=purple" alt="Latest Release">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
-    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
+    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=flat-square&color=yellow" alt="GitHub Stars">
   </a>
   <a href="https://opensource.org">
-    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=for-the-badge" alt="Open Source">
+    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=flat-square" alt="Open Source">
   </a>
 </p>
 
@@ -24,9 +21,11 @@
 
 *AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
 
+
  # Demo
 
-![Animation](https://github.com/user-attachments/assets/bc89a043-370b-49f7-98bf-c46fc17e4107)
+
+<img width="1004" height="395" alt="image" src="https://github.com/user-attachments/assets/74590b5c-1efc-428f-8f3a-deb2726ff7f9" />
 
 # How it works
 
@@ -71,10 +70,6 @@ Options:
    -o <output_file>   Specify packed output file path. If not provided, writes to input directory
    -l <key>    Lock the packed file with a password. Example: -l mypassword
 ```
-
-**Demo usage:**
-
-![Animation1](https://github.com/user-attachments/assets/1a8d9070-cb03-448f-90b1-69191beea82e)
 
 # Features
 
