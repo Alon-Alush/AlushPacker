@@ -70,6 +70,7 @@ packer <input_file> <output_file>
 
 **Full usage**:
 ```
+> packer.exe
 Usage:
    C:\Users\tamar\Downloads\packed_files\Builder.exe [OPTIONS] <input_file> <output_file
 Options:
