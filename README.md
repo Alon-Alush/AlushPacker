@@ -28,11 +28,6 @@
 
 ![Animation](https://github.com/user-attachments/assets/bc89a043-370b-49f7-98bf-c46fc17e4107)
 
-Encrypted strings of the packed file:
-
-<img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
-
-
 # How it works
 
 A new `.packed` section header is first created inside the new, packed file:
@@ -42,6 +37,10 @@ A new `.packed` section header is first created inside the new, packed file:
 This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
 
 At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+
+Encrypted strings in IDA Pro:
+
+<img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
 
 
 # Getting started
