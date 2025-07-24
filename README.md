@@ -33,18 +33,17 @@
 
 # How it works
 
-A new `.packed` section header will store the encrypted contents version of the original executable, after it has been compressed with [LZAV]([https://github.com/avaneev/lzav](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/lzav.h)), and encrypted using an [XTEA](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/encrypt.h) implementation.
+[The builder](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/builder.c) creates new `.packed` section header that stores the packed contents version of the original executable, after it has been compressed with the [LZAV](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/lzav.h) compression library, and encrypted using a [custom implementation](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/encrypt.h) of [XTEA](https://en.wikipedia.org/wiki/XTEA) (eXtended Tiny Encryption Algorithm) block cypher.
 
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
-At runtime, the reflective loader locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
-
+At runtime, the [reflective loader](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Packer/loader.c) locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 # Showcase
 
 ### Encrypted data (IDA Pro):
 
-In the packed version, the original executable's data is stored encrypted. Disassemblers like IDA will only be able to view the unpacker stub's code, not the actual payload we're going to execute at runtime.
+In the packed version, the original executable's data is stored, well.. packed, which means that disassemblers like IDA will not be able to extract any meaningful interpretation out of the payload that we're going to execute.
 
 <img width="291" height="131" alt="image" src="https://github.com/user-attachments/assets/914edc83-8078-4561-b1d7-a0baab6fea94" />
 
