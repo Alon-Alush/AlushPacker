@@ -24,8 +24,8 @@
 
  # Demo
 
+![Animation8](https://github.com/user-attachments/assets/36bfefa1-7a8c-4cf3-a233-310bce190d9f)
 
-<img width="1004" height="395" alt="image" src="https://github.com/user-attachments/assets/74590b5c-1efc-428f-8f3a-deb2726ff7f9" />
 
 # How it works
 
