@@ -46,11 +46,14 @@ At runtime, the unpacker stub locates this section within itself, decrypts and d
 
 <img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
 
+
+# Getting started
+
+The packer binaries can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
+
 ## Usage
 
-To pack a program, you generally specify its *input name*, and the packed file will automatically be written to the input directory with a `_packed` filename extension.
-
-Optionally, you can specify an *output name* directly.
+To pack a program, you generally specify its *input name* and *output name*. If an *output name* is not provided, the packed file will automatically be written to the input directory with a `_packed` filename extension.
 
 For example: 
 
