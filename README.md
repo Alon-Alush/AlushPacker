@@ -43,7 +43,7 @@ At runtime, the [reflective loader](https://github.com/Alon-Alush/AlushPacker/bl
 
 ### Encrypted data (IDA Pro):
 
-In the packed version, the original executable's data is stored, well.. packed, which means that disassemblers like IDA will not be able to extract any meaningful interpretation out of the payload that we're going to execute.
+In the packed version, the original executable's data is stored, well.. packed, meaning that disassemblers like IDA are unable to extract any meaningful interpretation out of that packed data.
 
 <img width="291" height="131" alt="image" src="https://github.com/user-attachments/assets/914edc83-8078-4561-b1d7-a0baab6fea94" />
 
