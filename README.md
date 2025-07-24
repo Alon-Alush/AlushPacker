@@ -46,40 +46,6 @@ At runtime, the unpacker stub locates this section within itself, decrypts and d
 
 <img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
 
-
-# AlushPacker: *PE packer* for *Windows*</h1>
-  <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
-  </a>
-  <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
-  </a>
-
-## Introduction
-
-
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, is smaller in size, and can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
-
-<img width="976" height="514" alt="Manually loading the packed executable" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
-
-# How it works
-
-
-A new `.packed` section header is first created inside the new, packed file:
-
-<img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
-
-This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
-
-At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
-
-
-# Showcase: (IDA Pro):
-
-- Encrypted strings:
-
-<img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
-
 ## Usage
 
 To pack a program, you generally specify its *input name*, and the packed file will automatically be written to the input directory with a `_packed` filename extension.
