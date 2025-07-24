@@ -22,7 +22,7 @@
 
 # Introduction
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The compressed + encrypted contents of the original executable are first embedded inside a new `.packed` section. At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The compressed + encrypted contents of the original executable are first packed inside a new `.packed` section. At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 The resulting executable is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
  # Demo
@@ -45,8 +45,6 @@ packer <input_file>
 ```
 
 ![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
-
-
 
 # Features
 
