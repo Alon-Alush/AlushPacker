@@ -46,6 +46,16 @@ packer <input_file>
 
 ![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
 
+# Packed file (overview)
+
+### Encrypted strings (IDA Pro):
+
+<img width="291" height="131" alt="image" src="https://github.com/user-attachments/assets/914edc83-8078-4561-b1d7-a0baab6fea94" />
+
+### Detect-It-Easy analysis:
+<img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
+
+
 # Features
 
 * x64 and x86 support
