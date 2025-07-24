@@ -43,7 +43,7 @@ The packed executable is smaller in size, and makes reverse engineering  / tampe
 
 # Getting started
 
-The packer binaries can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
+The packer can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
 
 ## Usage
 
