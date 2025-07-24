@@ -28,7 +28,7 @@ At runtime, the unpacker stub (reflective loader) locates this section within it
 
 # Demo
 
-### Encrypted strings (IDA Pro):
+### Encrypted data (IDA Pro):
 
 <img width="291" height="131" alt="image" src="https://github.com/user-attachments/assets/914edc83-8078-4561-b1d7-a0baab6fea94" />
 
