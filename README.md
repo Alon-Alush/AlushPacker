@@ -10,7 +10,7 @@
 ## Introduction
 
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, is smaller in size, and can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
 
 <img width="976" height="514" alt="Manually loading the packed executable" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
 
