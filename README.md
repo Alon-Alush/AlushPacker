@@ -53,7 +53,7 @@ In the packed version, the original executable's data is stored, well.. packed, 
 
 <img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
 
-# Getting started
+# Installation and usage
 
 The packer can be downloaded here: [latest release binaries](https://github.com/Alon-Alush/AlushPacker/releases/tag/v1.0.0).
 
