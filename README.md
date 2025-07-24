@@ -20,15 +20,25 @@
   </a>
 </p>
 
-# Introduction
+## Introduction
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. At build time, the packer compresses and encrypt the contents  of the original executable, embedding them inside a `.packed` section.
 
-At runtime, the unpacker stub (reflective loader) locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
 
-The packed executable is smaller in size, and makes reverse engineering  / tampering much harder with tools like IDA or Ghidra.
+<img width="976" height="514" alt="Manually loading the packed executable" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
 
-# Demo
+# Technical details
+
+A new `.packed` section header is first created inside the new, packed file:
+
+<img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
+
+This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
+
+At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+
+
+# Showcase
 
 ### Encrypted data (IDA Pro):
 
@@ -47,13 +57,26 @@ The packer can be downloaded here: [latest release binaries](https://github.com/
 
 ## Usage
 
-To pack a program, you generally specify its *input name*.
+To pack a program, you must specify its *input path*. Optionally, you can specify the output path, although this is not strictly required.
 
-For example: 
+Example usage:
 
 ```
-packer <input_file>
+packer <input_file> <output_file>
 ```
+
+**Full usage**:
+```
+Usage:
+   C:\Users\tamar\Downloads\packed_files\Builder.exe [OPTIONS] <input_file> <output_file
+Options:
+   -l <key>    Protect the packed file with a password. Example: -l mypassword
+
+    Example usage: packer.exe <input.exe> <output.exe>
+C:\Users\tamar\Downloads\packed_files>
+```
+
+**Visual Demo**:
 
 ![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
 
