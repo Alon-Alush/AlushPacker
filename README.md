@@ -24,7 +24,9 @@
 
  # Demo
 
-![Animation8](https://github.com/user-attachments/assets/36bfefa1-7a8c-4cf3-a233-310bce190d9f)
+![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
+
+
 
 
 # How it works
