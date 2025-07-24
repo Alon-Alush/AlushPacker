@@ -72,6 +72,10 @@ Options:
    -l <key>    Lock the packed file with a password. Example: -l mypassword
 ```
 
+**Demo usage:**
+
+![Animation1](https://github.com/user-attachments/assets/1a8d9070-cb03-448f-90b1-69191beea82e)
+
 # Features
 
 * x64 and x86 support
