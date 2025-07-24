@@ -25,33 +25,34 @@
 ## Introduction
 
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The packed file can hinder static analysis and reverse engineering with tools like IDA Pro or Ghidra.
 
 # Demo
 
-<img width="976" height="514" alt="Manually loading the packed executable" src="https://github.com/user-attachments/assets/ad3e995f-9837-4522-b64c-a481558dd208" />
+![Running the packed file](https://github.com/user-attachments/assets/40ce8bab-492e-4a7d-b8c2-3f8529ff5a50)
 
-# Technical details
+# How it works
 
-A new `.packed` section header will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
+A new `.packed` section header will store the encrypted contents version of the original executable, after it has been compressed with [LZAV]([https://github.com/avaneev/lzav](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/lzav.h)), and encrypted using an [XTEA](https://github.com/Alon-Alush/AlushPacker/blob/main/src/Builder/encrypt.h) implementation.
 
 <img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
 
-At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
+At runtime, the reflective loader locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
 
 # Showcase
 
 ### Encrypted data (IDA Pro):
 
+In the packed version, the original executable's data is stored encrypted. Disassemblers like IDA will only be able to view the unpacker stub's code, not the actual payload we're going to execute at runtime.
+
 <img width="291" height="131" alt="image" src="https://github.com/user-attachments/assets/914edc83-8078-4561-b1d7-a0baab6fea94" />
 
 ### Detect-It-Easy analysis:
+
+`Detect-It-Easy` has detected our packed section due to the high entropy. However, this detection can be bypassed by putting the payload inside a static C buffer, which you can do by compiling from source. To make the building straightforward, we use a precompiled stub that locates the packed data inside a separate section.
+
 <img width="717" height="214" alt="image" src="https://github.com/user-attachments/assets/3d4e3829-a209-4260-ac12-41f8fc100604" />
-
- ### Running the packed executable
-
-![Running the packed file](https://github.com/user-attachments/assets/40ce8bab-492e-4a7d-b8c2-3f8529ff5a50)
 
 # Getting started
 
