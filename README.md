@@ -71,7 +71,7 @@ packer <input_file> <output_file>
 ```
 > packer.exe
 Usage:
-   C:\Users\tamar\Downloads\packed_files\Builder.exe [OPTIONS] <input_file> <output_file
+   C:\Users\tamar\Downloads\packed_files\Builder.exe [OPTIONS] <input_file> <output_file>
 Options:
    -l <key>    Protect the packed file with a password. Example: -l mypassword
 
