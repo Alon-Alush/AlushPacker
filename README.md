@@ -1,47 +1,33 @@
-
-<h1>AlushPacker: Executable file packer for Windows</h1>
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/474bebdd-6669-4143-89d3-ef7bab3ca08d" alt ="Banner"/>
+  </a>
+<h1 align="center">AlushPacker: Executable file packer for Windows</h1>
+<p align="center">
   <a href="https://github.com/Alon-Alush/AlushPacker/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=flat-square&color=blue" alt="License">
+    <img src="https://img.shields.io/github/license/Alon-Alush/AlushPacker?style=for-the-badge&color=blue" alt="License">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker">
-    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=flat-square&logo=c&color=red" alt="Top Language">
+    <img src="https://img.shields.io/github/languages/top/Alon-Alush/AlushPacker?style=for-the-badge&logo=c&color=red" alt="Top Language">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/releases">
-    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=flat-square&color=purple" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/tag/Alon-Alush/AlushPacker?label=Release&style=for-the-badge&color=purple" alt="Latest Release">
   </a>
   <a href="https://github.com/Alon-Alush/AlushPacker/stargazers">
-    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=flat-square&color=yellow" alt="GitHub Stars">
+    <img src="https://img.shields.io/github/stars/Alon-Alush/AlushPacker?style=for-the-badge&color=yellow" alt="GitHub Stars">
   </a>
   <a href="https://opensource.org">
-    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=flat-square" alt="Open Source">
+    <img src="https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen.svg?style=for-the-badge" alt="Open Source">
   </a>
 </p>
 
 # Introduction
 
-*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The new PE file, after packing, can obstruct static analysis and reverse engineering with tools like IDA Pro or Ghidra.
+*AlushPacker* is a reflective PE packer that enables in-memory execution of native `.exe` files. The compressed + encrypted contents of the original executable are first embedded inside a new `.packed` section. At runtime, the unpacker stub decrypts those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
 
-
+The resulting executable is smaller in size, and is much harder to statically analyze with tools like IDA or Ghidra, making reverse engineering / tampering more difficult.
  # Demo
 
-![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
-
-
-
-
-# How it works
-
-A new `.packed` section header is first created inside the new, packed file:
-
-<img width="773" height="226" alt=".packed section in CFF Explorer" src="https://github.com/user-attachments/assets/bbe667e0-3eb1-42d7-9c28-619477035dfe" />
-
-This new section will store the encrypted contents version of the original executable, after it has been compressed with [LZAV](https://github.com/avaneev/lzav), and encrypted using an [XTEA](https://en.wikipedia.org/wiki/XTEA) implementation.
-
-At runtime, the unpacker stub locates this section within itself, decrypts and decompresses those contents, and manually loads the executable entirely from memory, with no disk I/O or help from the Windows loader.
-
-Encrypted strings in IDA Pro:
-
-<img width="293" height="267" alt="image" src="https://github.com/user-attachments/assets/3edc09ff-d389-4241-9e90-3bbc152cbfdb" /> 
+![Running the packed file](https://github.com/user-attachments/assets/40ce8bab-492e-4a7d-b8c2-3f8529ff5a50)
 
 
 # Getting started
@@ -50,28 +36,17 @@ The packer binaries can be downloaded here: [latest release binaries](https://gi
 
 ## Usage
 
-To pack a program, you generally specify its *input name* and *output name*. If an *output name* is not provided, the packed file will automatically be written to the input directory with a `_packed` filename extension.
+To pack a program, you generally specify its *input name*.
 
 For example: 
 
 ```
-packer <input_file> <output_file>
+packer <input_file>
 ```
 
-Here's the full usage:
+![AlushPacker command line demonstration](https://github.com/user-attachments/assets/12f55d88-19a3-4982-86ab-1923825a539a)
 
-```
-> packer.exe
 
-Alush Packer
-Copyright (C) 2025
-Alon Alush / alonalush5@gmail.com
-Usage:
-   packer.exe [OPTIONS] <input_file>
-Options:
-   -o <output_file>   Specify packed output file path. If not provided, writes to input directory
-   -l <key>    Lock the packed file with a password. Example: -l mypassword
-```
 
 # Features
 
