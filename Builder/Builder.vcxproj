@@ -127,13 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="builder.c" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="encrypt.h" />
     <ClInclude Include="lzav.h" />
     <ClInclude Include="structs.h" />
     <ClInclude Include="stubs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="builder.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

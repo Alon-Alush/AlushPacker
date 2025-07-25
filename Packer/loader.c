@@ -89,6 +89,12 @@ typedef BOOLEAN(__stdcall* pRtlAddFunctionTable) (
 	DestinationString->MaximumLength = i + 1;
 }*/
 
+uint32_t DJB2_hash(const unsigned char* buf, size_t size) {
+	uint32_t hash = 5381;
+	for (size_t i = 0; i < size; i++)
+		hash = ((hash << 5) + hash) + buf[i]; /* hash * 33 + byte */
+	return hash;
+}
 
 NTSTATUS __fastcall LdrpParseForwarderDescription(LPCSTR forwarderString, LPCSTR* forwardedDllName, PCHAR* forwardedFunctionName, PWORD Ordinal) {
 	const char* localForwarder = _strdup(forwarderString);
@@ -213,7 +219,6 @@ WORD __stdcall LdrpNameToOrdinal(LPCSTR importName, LPVOID imageBase, PIMAGE_EXP
 	middle = 0;
 	low = 0;
 	high = NumberOfNames;
-	WORD ordinal = 0;
 	while (low <= high) {
 		middle = low + ((high - low) / 2);
 		name = (unsigned char*)imageBase + nameTable[middle];
@@ -246,7 +251,7 @@ FARPROC LdrpResolveProcedureAddress(HMODULE hModule, LPCSTR lpProcName, PWORD Or
 	PDWORD exportAddr = (PDWORD)((unsigned char*)dllBase + exportDir->AddressOfFunctions);
 	FARPROC functionAddr = NULL;
 	DWORD functionRVA = 0;
-	DWORD ordinal;
+	WORD ordinal;
 	if (lpProcName) {
 		// import by name
 		ordinal = LdrpNameToOrdinal(lpProcName, dllBase, exportDir);
@@ -389,7 +394,7 @@ LPVOID CreateTlsData(IMAGE_TLS_DIRECTORY* tlsDirectory) {
 
 }
 
-void SetTlsData(LPVOID tlsData, DWORD tlsIndex) {
+void SetTlsData(DWORD tlsIndex, LPVOID tlsData) {
 	MYTEB* pTeb = (MYTEB*)NtCurrentTeb();
 	if (pTeb) {
 		if (tlsIndex < 64) {
@@ -424,7 +429,7 @@ LPVOID GetTlsData(DWORD tlsIndex) {
 
 void SetTlsIndex(PIMAGE_TLS_DIRECTORY tlsDirectory, DWORD index) {
 	DWORD* targetIndex = (PDWORD)tlsDirectory->AddressOfIndex;
-	if (targetIndex) {
+	if (!targetIndex) {
 		return;
 	}
 	*targetIndex = index;
@@ -456,9 +461,6 @@ void executeCallbacks(LPVOID imageBase, DWORD Reason, PVOID Context) {
 		IMAGE_TLS_DIRECTORY* tlsDirectory = (IMAGE_TLS_DIRECTORY*)((DWORD_PTR)imageBase + tlsDir.VirtualAddress);
 		PIMAGE_TLS_CALLBACK* callback = (PIMAGE_TLS_CALLBACK*)tlsDirectory->AddressOfCallBacks;
 
-		IMAGE_TLS_DIRECTORY* tlsDirectory = (IMAGE_TLS_DIRECTORY*)((DWORD_PTR)imageBase + tlsDir.VirtualAddress);
-		PIMAGE_TLS_CALLBACK* callback = (PIMAGE_TLS_CALLBACK*)tlsDirectory->AddressOfCallBacks;
-
 		if (callback) {
 			while (*callback) {
 				// Execute each TLS callback with DLL_PROCESS_ATTACH
@@ -475,10 +477,29 @@ void ClearTlsData(DWORD tlsIndex) {
 	}
 	LPVOID tlsData = GetTlsData(tlsIndex);
 	if (!tlsData) {
-		VirtualFree(tlsData, 0, MEM_RELEASE);
+		return;
 	}
+
+	VirtualFree(tlsData, 0, MEM_RELEASE);
 	SetTlsData(tlsIndex, NULL);
 }
+
+/*void NTAPI TlsCallbackProxy(PVOID DllBase, DWORD Reason, PVOID Context) {
+	switch (Reason) {
+	case DLL_PROCESS_ATTACH: {
+		executeCallbacks(DllBase, Reason, Context);
+		}
+	case DLL_PROCESS_DETACH: {
+		executeCallbacks(DllBase, Reason, Context);
+	}
+	case DLL_THREAD_ATTACH: {
+		InitializeTlsData(DllBase);
+
+	}
+
+			
+	}
+}*/
 
 
 /*void __stdcall TlsProxy(PVOID DllHandle, DWORD Reason, PVOID Reserved) {
@@ -516,6 +537,7 @@ int mapSections(LPVOID imageBase, BYTE* decryptedPE, IMAGE_NT_HEADERS* ntHeaders
 			memset((LPVOID)(((DWORD_PTR)sectionVA + section->SizeOfRawData)), 0, zeroPadSize);
 		}
 	}
+	return 0;
 }
 
 int memoryProtection(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
@@ -571,6 +593,7 @@ LPVOID imageBaseAlloc(BYTE* sourceBase, IMAGE_NT_HEADERS* ntHeaders) {
 			return NULL;
 		}
 	}
+	return imageBase;
 }
 
 int applyRelocations(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
@@ -619,8 +642,9 @@ int applyRelocations(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
 			}
 			reloc = (IMAGE_BASE_RELOCATION*)((DWORD_PTR)reloc + reloc->SizeOfBlock);
 		}
-		return 0;
 	}
+
+	return 0;
 }
 
 LPVOID executePE(BYTE* decryptedPE) {
@@ -831,13 +855,34 @@ int main() {
 
 	ppacked_section packed_section = findPackedSection();
 	if (packed_section == NULL) {
-		printf("Could not locate .packed section. This unpacker mostly serves as a template; make sure you're using the builder!\n");
+		printf("Could not locate .packed section.\n");
 		return 1;
 	}
 	size_t unpacked_size = packed_section->unpacked_size;
 	unsigned char* packed_payload = packed_section->payload;
+	if (packed_section->lockFlag) {
+		// payload locking is enabled
+		unsigned char* inputKey = NULL;
+		printf("This executable file is locked with a password for security reasons. Enter the password to unlock the program (maximum 32 characters):\n\n");
 
-	LPVOID EntryPoint = executePE(decompressPayload(packed_payload, unpacked_size, packed_section->packed_size));
+		if (scanf_s("%u", inputKey)) {
+			uint32_t key[4] = 0;
+			for (int i = 0; i < 4; i++) {
+				key[i] = strtoul(inputKey, 0, 10);
+			}
+			decrypt_payload(packed_payload, packed_section->packed_size, key);
+			if (DJB2_hash(packed_payload, packed_section->packed_size) == packed_section->lockHash) {
+				printf("Correct key! Unlocking program...\n");
+			}
+			else {
+				printf("Incorrect key entered\n");
+				return 1;
+			}
+		}
+
+	}
+	BYTE* decryptedPE = decompressPayload(packed_payload, unpacked_size, packed_section->packed_size);
+	LPVOID EntryPoint = executePE(decryptedPE);
 
 #endif
 	if (!EntryPoint) {

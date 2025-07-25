@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <wininet.h>
 #include <stdio.h>
@@ -7,7 +7,6 @@
 #include "encrypt.h"
 #include "stubs.h"
 #include "structs.h"
-#include "encrypt.h"
 #include <intrin.h>
 
 #define ALIGN_UP(x, align) ((x) & -(align))
@@ -17,6 +16,13 @@
 DWORD align_value(DWORD valueToAlign, DWORD alignment) {
     DWORD r = valueToAlign % alignment;
     return r ? valueToAlign + (alignment - r) : valueToAlign;
+}
+
+uint32_t DJB2_hash(const unsigned char* buf, size_t size) {
+    uint32_t hash = 5381;
+    for (size_t i = 0; i < size; i++)
+        hash = ((hash << 5) + hash) + buf[i]; /* hash * 33 + byte */
+    return hash;
 }
 
 size_t determineWriteSize(LPVOID imageBase, size_t inputFileSize, DWORD packedSectionSize) {
@@ -35,8 +41,10 @@ size_t determineWriteSize(LPVOID imageBase, size_t inputFileSize, DWORD packedSe
     return (size_t)align_value(lastSection->PointerToRawData + lastSection->SizeOfRawData, fileAlignment) + align_value(packedSectionSize, fileAlignment);
 }
 
-BYTE* addSectionToInputFile(BYTE* inputFile, size_t inputFileSize, packed_section* packedSection, DWORD packedSectionSize, size_t writeSize) {
-    
+BYTE* addSectionToInputFile(BYTE* inputFile, size_t inputFileSize, void* pSection, DWORD pSectionSize, size_t* writeSize) {
+
+    size_t writeSize = determineWriteSize(inputFile, inputFileSize, pSectionSize);
+
     BYTE* resizedInput = malloc(writeSize);
     if (resizedInput == NULL) {
         return NULL;
@@ -57,8 +65,8 @@ BYTE* addSectionToInputFile(BYTE* inputFile, size_t inputFileSize, packed_sectio
     unsigned char name[] = ".packed";
     fileHeader->NumberOfSections += 0x01;
     memcpy(newSection->Name, name, sizeof(name));
-    newSection->Misc.VirtualSize = packedSectionSize;
-    newSection->SizeOfRawData = align_value(packedSectionSize, fileAlignment);
+    newSection->Misc.VirtualSize = pSectionSize;
+    newSection->SizeOfRawData = align_value(pSectionSize, fileAlignment);
     newSection->PointerToRawData = align_value(lastSection->PointerToRawData + lastSection->SizeOfRawData, fileAlignment);
     newSection->PointerToRelocations = 0;
     newSection->PointerToLinenumbers = 0;
@@ -67,22 +75,19 @@ BYTE* addSectionToInputFile(BYTE* inputFile, size_t inputFileSize, packed_sectio
     newSection->NumberOfLinenumbers = 0;
     newSection->Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_CNT_INITIALIZED_DATA;
     ntHeaders->OptionalHeader.SizeOfImage = align_value(newSection->VirtualAddress + newSection->Misc.VirtualSize, sectionAlignment);
-    memcpy((void*)((DWORD_PTR)imageBase + newSection->PointerToRawData), packedSection, packedSectionSize);
+    memcpy((void*)((DWORD_PTR)imageBase + newSection->PointerToRawData), pSection, pSectionSize);
     return resizedInput;
 }
 
-BYTE* processFile(FILE* fp, DWORD* size) {
-    fseek(fp, 0, SEEK_END);
-    *size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    BYTE* inputFile = malloc(*size);
+BYTE* processFile(FILE* fp, DWORD size) {
+    BYTE* inputFile = malloc(size);
     if (inputFile == 0) {
         fprintf(stderr, "Could not allocate memory for the input file\n");
         return NULL;
     }
 
-    size_t result = fread(inputFile, sizeof(char), *size, fp);
-    if (result != *size) {
+    size_t result = fread(inputFile, sizeof(char), size, fp);
+    if (result != size) {
         fprintf(stderr, "Failure!\n");
         return NULL;
     }
@@ -106,14 +111,16 @@ BYTE* processFile(FILE* fp, DWORD* size) {
     return inputFile;
 }
 
-BYTE* compressAndEncrypt(BYTE* inputFile, int* fileSize, int* returnCompressedSize) {
+BYTE* compressAndEncrypt(BYTE* inputFile, size_t fileSize, size_t * returnCompressedSize) {
 
-    int max_size = lzav_compress_bound(*fileSize);
+    int max_size = lzav_compress_bound(fileSize);
     BYTE* compressed_buffer = malloc(max_size);
-
+    if (compressed_buffer == NULL) {
+        return NULL;
+    }
     printf("[+] File compression started!\n");
 
-    int comp_len = lzav_compress_default(inputFile, compressed_buffer, *fileSize, max_size);
+    int comp_len = lzav_compress_default(inputFile, compressed_buffer, fileSize, max_size);
     printf("[+] Compression finished!\n");
     uint32_t key[4] = { 0x01234567, 0x89ABCDEF, 0xFEDCBA98, 0x76543210 }; // 128 bit key
     encrypt_payload(compressed_buffer, comp_len, key);
@@ -129,18 +136,27 @@ int main(int argc, char* argv[]) {
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN);
-    printf("Alush Packer\nCopyright (C) 2025\nAlon Alush / alonalush5@gmail.com\n");
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    SetConsoleOutputCP(CP_UTF8);
+    const wchar_t* text =
+        L" █████╗ ██╗     ██╗   ██╗███████╗██╗  ██╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ \n"
+        L"██╔══██╗██║     ██║   ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗\n"
+        L"███████║██║     ██║   ██║███████╗███████║██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝\n"
+        L"██╔══██║██║     ██║   ██║╚════██║██╔══██║██╔═══╝ ██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗\n"
+        L"██║  ██║███████╗╚██████╔╝███████║██║  ██║██║     ██║  ██║╚██████╗██║  ██╗███████╗██║  ██║\n"
+        L"╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\n"
+        L"Copyright(C) 2025 / alonalush5@gmail.com\n";
+    WriteConsoleW(hConsole, text, wcslen(text), NULL, NULL);
     SetConsoleTextAttribute(hConsole, 7);
+
     if (argc < 2) {
-        fprintf(stderr, "Usage:\n   %s [OPTIONS] <input_file>\n", argv[0]);
+        fprintf(stderr, "Usage:\n   %s [OPTIONS] <input_file> <output_file\n", argv[0]);
         printf("Options:\n");
-        printf("   -o <output_file>   Specify packed output file path. If not provided, writes to input directory\n");
         //printf("   -e          Encrypt file with a random 16-byte key.\n");
         //printf("   -c          Compress input file with LZAV, a fast general-purpose in-memory data compression algorithm\n");
         printf("   -l <key>    Protect the packed file with a password. Example: -l mypassword\n\n");
 
-        printf("    Example usage: packer.exe file-to-pack.exe");
+        printf("    Example usage: packer.exe <input.exe> <output.exe>");
         return 1;
     }
     //BOOL encryptFlag = FALSE;
@@ -161,6 +177,7 @@ int main(int argc, char* argv[]) {
 
     char outputPath[MAX_PATH] = { 0 };
     uint32_t lockKey[4] = { 0 };
+    uint32_t lockHash = 0;
     for (int i = 2; i < argc; i++) {
         if (argv[i] != NULL) {
             /*if (strcmp(argv[i], "-e") == 0) {
@@ -177,6 +194,8 @@ int main(int argc, char* argv[]) {
                     }
 
                     lockFlag = 1;
+
+                    lockHash = hash(argv[i + 1]);
                     // let's convert it to a 128 bit key
                     for (int i = 0; i < 4; i++) {
 
@@ -232,23 +251,39 @@ int main(int argc, char* argv[]) {
     }
     // now outputpath should contain a valid path to write to
     DWORD fileSize = 0;
+
+    fseek(inputfp, 0, SEEK_END);
+    fileSize = ftell(inputfp);
+    fseek(inputfp, 0, SEEK_SET);
+
     BYTE* inputFile = processFile(inputfp, &fileSize);
-    // size contains size of input file
-    int packed_size = 0;
+
     if (inputFile == NULL) {
         return 1;
     }
+    // fileSize contains size of input file
+    size_t packed_size = 0;
     BYTE* packedPayload = compressAndEncrypt(inputFile, &fileSize, &packed_size);
-    DWORD packedSectionSize = packed_size + sizeof(packed_section);
-    packed_section* packedSection = malloc(packedSectionSize);
+
+    if (packedPayload == NULL) {
+        return 1;
+    }
+
+    packed_section* packedSection = malloc(packed_size);
+    if (packedSection == NULL) {
+        return 1;
+    }
+    DWORD packedSectionSize = packedSection->packed_size + sizeof(packed_section);
     if (packedSection == NULL) {
         return 1;
     }
     if (lockFlag == TRUE) {
+
+        packedSection->lockFlag = TRUE;
+        printf("[+] Successfully locked payload with input password\n");
         // encrypt again with user input key
         encrypt_payload(packedPayload, packed_size, lockKey);
-        packedSection->lockFlag = TRUE;
-        memcpy(packedSection->lockKey, lockKey, sizeof(lockKey));
+        packedSection->lockHash = DJB2_hash(packedPayload, packed_size);
     }
 
     packedSection->unpacked_size = fileSize;
@@ -271,21 +306,14 @@ int main(int argc, char* argv[]) {
         stub_size = stub_size_x86;
         precompiled_unpacker = precompiled_unpacker_x86;
     }
-
-    unsigned char* dynamicStub = malloc(stub_size);
-    if (!dynamicStub) {
-        return 1;
-    }
-
-    size_t writeSize = determineWriteSize(precompiled_unpacker, stub_size, packedSectionSize);
-    memcpy(dynamicStub, precompiled_unpacker, stub_size);
-    BYTE* toWrite = addSectionToInputFile(dynamicStub, stub_size, (LPVOID)packedSection, packedSectionSize, writeSize);
+    size_t finalSize = 0;
+    BYTE* finalFile = addSectionToInputFile(&precompiled_unpacker, stub_size, (LPVOID)packedSection, packedSectionSize, finalSize);
     outputfp = fopen(outputPath, "wb");
     if (!outputfp) {
         return 1;
     }
 
-    fwrite(toWrite, sizeof(char), writeSize, outputfp);
+    fwrite(finalFile, sizeof(char), finalSize, outputfp);
     fclose(outputfp);
     printf("Successfully saved payload to %s\n", outputPath);
 

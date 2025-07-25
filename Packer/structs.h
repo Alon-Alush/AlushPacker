@@ -33,13 +33,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+ // struct to map the contents of the .packed section
 typedef struct _packed_section {
     uint32_t unpacked_size;
     uint32_t packed_size;
     BOOL lockFlag;
-    char lockKey[32];
+    uint32_t lockHash;
     unsigned char payload[];
-} packed_section, * ppacked_section;
+} packed_section, *ppacked_section;
 typedef struct _MYPEB
 {
     BOOLEAN InheritedAddressSpace;
