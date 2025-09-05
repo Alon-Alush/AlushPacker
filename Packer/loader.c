@@ -40,54 +40,16 @@
 #include "lzav.h"
 #include "decrypt.h"
 #include "payload.h"
+#include "encryptdebug.h"
 #include "structs.h"
 #include <Wtsapi32.h>
+#include "definitions.h"
+//#include "tls.h"
 #include <winnt.h>
 #include <CRTDBG.H>
 #define ROTATE_BITS 3
  // For debugging the unpacker with a static payload
- //#define DEBUG_STUB
-typedef NTSTATUS(__stdcall* pZwAllocateVirtualMemory)(
-	HANDLE ProcessHandle,
-	PVOID* BaseAddress,
-	ULONG_PTR ZeroBits,
-	PSIZE_T RegionSize,
-	ULONG AllocationType,
-	ULONG Protect
-	);
-typedef NTSTATUS(__stdcall* pLdrLoadDll) (
-	PWCHAR PathToFile,
-	ULONG Flags,
-	PUNICODE_STRING ModuleFileName,
-	PHANDLE ModuleHandle
-	);
-typedef void(__stdcall* pRtlInitUnicodeString) (
-	PUNICODE_STRING	DestinationString,
-	PCWSTR SourceString
-	);
-#ifdef _WIN64
-typedef BOOLEAN(__stdcall* pRtlAddFunctionTable) (
-	PRUNTIME_FUNCTION FunctionTable,
-	DWORD EntryCount,
-	DWORD64 BaseAddress
-	);
-#endif
-
-/*void __stdcall RtlInitAnsiString(ANSI_STRING* DestinationString, PCSZ SourceString) {
-
-	int i = 0;
-	DestinationString->Length = i;
-
-	if (SourceString == NULL) {
-		return;
-	}
-	DestinationString->Buffer = SourceString;
-	while (SourceString[i] != '\0') {
-		i++;
-	}
-	DestinationString->Length = i;
-	DestinationString->MaximumLength = i + 1;
-}*/
+ #define DEBUG_STUB
 
 uint32_t DJB2_hash(const unsigned char* buf, size_t size) {
 	uint32_t hash = 5381;
@@ -95,7 +57,8 @@ uint32_t DJB2_hash(const unsigned char* buf, size_t size) {
 		hash = ((hash << 5) + hash) + buf[i]; /* hash * 33 + byte */
 	return hash;
 }
-
+LPVOID globalImageBase = NULL;
+LPVOID globalSizeOfImage = NULL;
 NTSTATUS __fastcall LdrpParseForwarderDescription(LPCSTR forwarderString, LPCSTR* forwardedDllName, PCHAR* forwardedFunctionName, PWORD Ordinal) {
 	const char* localForwarder = _strdup(forwarderString);
 	char* dot = strrchr(localForwarder, '.');
@@ -135,6 +98,30 @@ void* mymemcpy(void* dst, const void* src, size_t len)
 	return dst;
 }
 
+
+
+
+BYTE* compressAndEncrypt(BYTE* inputFile, DWORD fileSize, DWORD* returnCompressedSize) {
+
+	int max_size = lzav_compress_bound(fileSize);
+	BYTE* compressed_buffer = malloc(max_size);
+	if (compressed_buffer == NULL) {
+		return NULL;
+	}
+	printf("[+] File compression started!\n");
+
+	int comp_len = lzav_compress_default(inputFile, compressed_buffer, fileSize, max_size);
+	printf("[+] Compression finished!\n");
+	uint32_t key[4] = { 0x01234567, 0x89ABCDEF, 0xFEDCBA98, 0x76543210 }; // 128 bit key
+	encrypt_payload(compressed_buffer, comp_len, key);
+	*returnCompressedSize = comp_len;
+
+	printf("[+] Encryption successful!\n");
+
+
+	return compressed_buffer;
+}
+
 HMODULE myGetModuleHandle(LPCSTR ModuleName) {
 #ifdef _WIN64
 	MYPEB* pPeb = (MYPEB*)__readgsqword(0x60);
@@ -154,13 +141,16 @@ HMODULE myGetModuleHandle(LPCSTR ModuleName) {
 	if (strncmp(inputModule, "api-", 4) == 0 || strncmp(inputModule, "ext-", 4) == 0) {
 		// input module is an API set, let's resolve it
 
-		API_SET_NAMESPACE_ARRAY* apiSetMap = (API_SET_NAMESPACE_ARRAY*)pPeb->ApiSetMap;
-		for (size_t i = 0; i < apiSetMap->Count; i++) {
+		API_SET_NAMESPACE_ARRAY* apiSetSchema = (API_SET_NAMESPACE_ARRAY*)pPeb->ApiSetMap;
+		for (size_t i = 0; i < apiSetSchema->Count; i++) {
 			char apiSetName[MAX_PATH] = { 0 };
 			char dllName[MAX_PATH] = { 0 };
 			size_t oldValueLen = 0;
-			API_SET_NAMESPACE_ENTRY* Entry = (API_SET_NAMESPACE_ENTRY*)apiSetMap + apiSetMap->Start;
+			API_SET_NAMESPACE_ENTRY* Entry = (API_SET_NAMESPACE_ENTRY*)apiSetSchema + apiSetSchema->Start;
+			PAPI_SET_VALUE_ARRAY pHostArray = (PAPI_SET_VALUE_ARRAY)((PUCHAR)apiSetSchema +
+				apiSetSchema->Start + sizeof(API_SET_VALUE_ARRAY) * apiSetSchema->Size);
 
+			
 			// So there's a Count numbers of descriptor arrays
 
 
@@ -175,8 +165,8 @@ HMODULE myGetModuleHandle(LPCSTR ModuleName) {
 	wchar_t wideInputModule[MAX_PATH] = { 0 };
 
 	MultiByteToWideChar(CP_ACP, 0, inputModule, MAX_PATH, wideInputModule, MAX_PATH);
-	for (LIST_ENTRY* ListEntry = ModuleEntry; ListEntry != ModuleListHead; ListEntry = ListEntry->Flink) {
-		MYLDR_DATA_TABLE_ENTRY* dataTableEntry = CONTAINING_RECORD(ListEntry, MYLDR_DATA_TABLE_ENTRY, InMemoryOrderLinks);
+	for (ModuleEntry; ModuleEntry != ModuleListHead; ModuleEntry = ModuleEntry->Flink) {
+		MYLDR_DATA_TABLE_ENTRY* dataTableEntry = CONTAINING_RECORD(ModuleEntry, MYLDR_DATA_TABLE_ENTRY, InMemoryOrderLinks);
 
 		PWCHAR wideTargetModule = dataTableEntry->BaseDllName.Buffer;
 		if (_wcsicmp(wideInputModule, wideTargetModule) == 0) {
@@ -206,14 +196,23 @@ packed_section* findPackedSection() {
 	return NULL;
 }
 #endif
+LPCSTR LdrpOrdinalToName(WORD ordinal, LPVOID imageBase, PIMAGE_EXPORT_DIRECTORY exportDir) {
 
-WORD __stdcall LdrpNameToOrdinal(LPCSTR importName, LPVOID imageBase, PIMAGE_EXPORT_DIRECTORY exportDir) {
 	DWORD NumberOfNames = exportDir->NumberOfNames;
-	WORD ordinal = 0;
 	PDWORD nameTable = (PDWORD)((unsigned char*)imageBase + exportDir->AddressOfNames); // Export Name Table
 	PWORD namesOrdinal = (PWORD)((unsigned char*)imageBase + exportDir->AddressOfNameOrdinals);
-	// let's do binary search
 	const char* name = NULL;
+
+	// let's do linear search
+	for (size_t i = 0; i < exportDir->NumberOfNames; i++) {
+		if (namesOrdinal[i] == ordinal) {
+		name = (const char*)imageBase + nameTable[i];
+		}
+	}
+	return name;
+}
+WORD __stdcall LdrpNameToOrdinal(LPCSTR importName,DWORD NumberOfNames, LPVOID imageBase, PDWORD nameTable, PWORD namesOrdinal) {
+
 	LONG low, high, middle, result;
 
 	middle = 0;
@@ -221,7 +220,7 @@ WORD __stdcall LdrpNameToOrdinal(LPCSTR importName, LPVOID imageBase, PIMAGE_EXP
 	high = NumberOfNames;
 	while (low <= high) {
 		middle = low + ((high - low) / 2);
-		name = (unsigned char*)imageBase + nameTable[middle];
+		char* name = (const char*)imageBase + nameTable[middle];
 		result = strcmp(name, importName);
 		if (result > 0) {
 			high = middle - 1;
@@ -231,16 +230,18 @@ WORD __stdcall LdrpNameToOrdinal(LPCSTR importName, LPVOID imageBase, PIMAGE_EXP
 		}
 		else {
 			// found it
-			ordinal = namesOrdinal[middle];
+		    WORD ordinal = namesOrdinal[middle];
 			return ordinal;
 		}
 
 	}
-	return 0;
+	return (USHORT)-1;
 }
 
 FARPROC LdrpResolveProcedureAddress(HMODULE hModule, LPCSTR lpProcName, PWORD Ordinal) {
-
+	if (hModule == NULL) {
+		return NULL;
+	}
 	LPVOID dllBase = (LPVOID)hModule;
 
 	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((unsigned char*)dllBase);
@@ -251,28 +252,44 @@ FARPROC LdrpResolveProcedureAddress(HMODULE hModule, LPCSTR lpProcName, PWORD Or
 	PDWORD exportAddr = (PDWORD)((unsigned char*)dllBase + exportDir->AddressOfFunctions);
 	FARPROC functionAddr = NULL;
 	DWORD functionRVA = 0;
-	WORD ordinal;
+
+	DWORD NumberOfNames = exportDir->NumberOfNames;
+	WORD ordinal = 0;
+	PDWORD nameTable = (PDWORD)((unsigned char*)dllBase + exportDir->AddressOfNames); // Export Name Table
+	PWORD namesOrdinal = (PWORD)((unsigned char*)dllBase + exportDir->AddressOfNameOrdinals);
 	if (lpProcName) {
 		// import by name
-		ordinal = LdrpNameToOrdinal(lpProcName, dllBase, exportDir);
+
+		ordinal = LdrpNameToOrdinal(lpProcName, NumberOfNames, dllBase, nameTable, namesOrdinal);
 	}
 	else {
 		// import by ordinal
 		ordinal = *Ordinal;
 	}
-	if (ordinal == 0) {
+
+	if (ordinal >= exportDir->NumberOfFunctions) {
+		// invalid ordinal
 		return NULL;
-		// ordinal was not found
 	}
 	functionRVA = exportAddr[ordinal];
 	if (functionRVA > ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress && functionRVA < ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress + ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size) {
 		// parse, call ourselves with the new values
+		const char* forwarderString = (const char*)dllBase + functionRVA;
 		LPCSTR forwardedDllName, forwardedFunctionName = NULL;
-		NTSTATUS status = LdrpParseForwarderDescription((const char*)dllBase + functionRVA, &forwardedDllName, &forwardedFunctionName, &ordinal);
+		NTSTATUS status = LdrpParseForwarderDescription(forwarderString, &forwardedDllName, &forwardedFunctionName, &ordinal);
+
 		if (status) {
 			return NULL;
 		}
-		functionAddr = LdrpResolveProcedureAddress(GetModuleHandleA(forwardedDllName), forwardedFunctionName, &ordinal);
+		HMODULE forwardedModule = LoadLibraryA(forwardedDllName);
+		if (hModule == forwardedModule) {
+			// forwarded to itself somehow
+			// FUCK MICROSOFT
+			// let's load kernelbase
+			forwardedModule = LoadLibraryA("kernelbase.dll");
+		}
+		LoadLibraryA(forwardedDllName);
+		functionAddr = LdrpResolveProcedureAddress(forwardedModule, forwardedFunctionName, &ordinal);
 	}
 
 	else {
@@ -305,7 +322,6 @@ HMODULE MyLoadLibrary(LPCSTR lpFileName) {
 
 	pRtlInitUnicodeString RtlInitUnicodeString = (pRtlInitUnicodeString)myGetProcAddress(ntdll, "RtlInitUnicodeString");
 	RtlInitUnicodeString(&unicodeModule, lpFileNameWide);
-
 	pLdrLoadDll myLdrLoadDll = (pLdrLoadDll)myGetProcAddress(ntdll, "LdrLoadDll");
 	if (myLdrLoadDll == NULL) {
 		return NULL;
@@ -331,12 +347,39 @@ LPVOID myVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
 	return lpAddress;
 
 }
-#ifdef DEBUG_STUB
-unsigned char* decompressPayload(size_t unpacked_size) {
 
-#else
+BOOL myVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect) {
+
+	HMODULE ntdll = myGetModuleHandle("ntdll.dll");
+	if (ntdll == NULL) {
+		return FALSE;
+	}
+	pZwProtectVirtualMemory myProtectVirtualMemory = (pZwProtectVirtualMemory)myGetProcAddress(ntdll, "ZwProtectVirtualMemory");
+	if (myProtectVirtualMemory == NULL) {
+		return FALSE;
+	}
+	NTSTATUS status = myProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect);
+	if (status < 0) {
+		return FALSE;
+	}
+	return TRUE;
+
+
+}
+
+
+BOOL myRtlInsertInvertedFunctionTable(LPVOID imageBase, DWORD SizeOfImage) {
+	HMODULE ntdll = myGetModuleHandle("ntdll.dll");
+	pRtlInsertInvertedFunctionTable myRtlInsertInvertedFunctionTable = (pRtlInsertInvertedFunctionTable)((DWORD_PTR)ntdll + 0x108F0);
+	NTSTATUS status = myRtlInsertInvertedFunctionTable(imageBase, SizeOfImage);
+	if (status < 0) {
+		return FALSE;
+	}
+	return TRUE;
+
+}
+
 unsigned char* decompressPayload(unsigned char* packed_payload, size_t unpacked_size, size_t packed_size) {
-#endif
 
 	unsigned char* decomp_buf = myVirtualAlloc(NULL, unpacked_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if (decomp_buf == NULL) {
@@ -349,7 +392,7 @@ unsigned char* decompressPayload(unsigned char* packed_payload, size_t unpacked_
 	return decomp_buf;
 }
 
-IMAGE_TLS_DIRECTORY* GetTlsDirectory(LPVOID imageBase) {
+/*IMAGE_TLS_DIRECTORY* GetTlsDirectory(LPVOID imageBase) {
 
 	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
 	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
@@ -447,7 +490,7 @@ void InitializeTlsData(LPVOID imageBase, DWORD index) {
 	IMAGE_TLS_DIRECTORY* tlsDirectory = GetTlsDirectory(imageBase);
 	LPVOID tlsData = CreateTlsData(tlsDirectory);
 	if (!tlsData) {
-		SetTlsData(tlsData, index);
+		SetTlsData(index, tlsData);
 	}
 }
 
@@ -483,48 +526,66 @@ void ClearTlsData(DWORD tlsIndex) {
 	VirtualFree(tlsData, 0, MEM_RELEASE);
 	SetTlsData(tlsIndex, NULL);
 }
+BOOL entryPointCalled = FALSE;
 
-/*void NTAPI TlsCallbackProxy(PVOID DllBase, DWORD Reason, PVOID Context) {
+void NTAPI TlsCallbackProxy(PVOID DllBase, DWORD Reason, PVOID Context) {
+	if (!entryPointCalled) {
+		return;
+	}
 	switch (Reason) {
-	case DLL_PROCESS_ATTACH: {
-		executeCallbacks(DllBase, Reason, Context);
+		case DLL_PROCESS_ATTACH: {
+			executeCallbacks(tlsGlobalBase, Reason, Context);
+			break;
 		}
-	case DLL_PROCESS_DETACH: {
-		executeCallbacks(DllBase, Reason, Context);
-	}
-	case DLL_THREAD_ATTACH: {
-		InitializeTlsData(DllBase);
+		case DLL_PROCESS_DETACH: {
+			executeCallbacks(tlsGlobalBase, Reason, Context);
+			break;
+		}
+		case DLL_THREAD_ATTACH: {
+			InitializeTlsData(tlsGlobalBase, 0);
+			executeCallbacks(tlsGlobalBase, Reason, Context);
+			break;
+		}
 
-	}
+		case DLL_THREAD_DETACH: {
 
-			
+			executeCallbacks(tlsGlobalBase, Reason, Context);
+			ClearTlsData(0);
+			break;
+		}
 	}
 }*/
 
 
-/*void __stdcall TlsProxy(PVOID DllHandle, DWORD Reason, PVOID Reserved) {
-	if (Reason == DLL_THREAD_DETACH)
-	{
-		ExecuteCallbacks(DllHandle, Reason, Reserved);
-		ClearTlsData();
+BOOL PatchRtlIsValidHandler(HMODULE ntdll) {
+	if (!ntdll) {
+		return FALSE;
 	}
-	else if (dwReason == DLL_THREAD_ATTACH)
-	{
-		_tlsResolver->InitializeTlsData(_peImage);
-		_tlsResolver->ExecuteCallbacks(_peImage, dwReason, pContext);
-	}
-	else if (dwReason == DLL_PROCESS_ATTACH)
-	{
-		ExecuteCallbacks(DllHandle, Reason, Reserved);
-	}
-	else if (dwReason == DLL_PROCESS_DETACH)
-	{
-		_tlsResolver->ExecuteCallbacks(_peImage, dwReason, pContext);
-	}
-}*/
+	// RtlIsValidHandler offset from ntdll image base: 0x699C3 (this may change in different versoins; I'm just too lazy to implement a proper solution
+	BYTE* RtlIsValidHandlerAddr = (BYTE*)ntdll + 0x699C3;
+	BYTE* instructionPatchOpcode = RtlIsValidHandlerAddr + 0x3C22E + 1;
+	// je opcode 0x84^
+	DWORD oldProtect = 0;
+	BOOL status = myVirtualProtect((LPVOID)instructionPatchOpcode, 0x1, PAGE_EXECUTE_READWRITE, &oldProtect);
 
-int mapSections(LPVOID imageBase, BYTE* decryptedPE, IMAGE_NT_HEADERS* ntHeaders) {
-	
+	if (!status) {
+		return FALSE;
+	}
+
+	*instructionPatchOpcode += 1; // Patch to jne instead of je
+	return TRUE;
+
+}
+
+BOOL PatchWriteFile(HMODULE ntdll) {
+
+}
+
+VOID LdrpMapSectionsOfImage(LPVOID imageBase, BYTE* decryptedPE) {
+
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)decryptedPE);
+
+	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)decryptedPE + dosHeader->e_lfanew);
 	IMAGE_SECTION_HEADER* section = IMAGE_FIRST_SECTION(ntHeaders);
 	LPVOID sectionVA = NULL;
 	mymemcpy(imageBase, decryptedPE, ntHeaders->OptionalHeader.SizeOfHeaders);
@@ -537,69 +598,60 @@ int mapSections(LPVOID imageBase, BYTE* decryptedPE, IMAGE_NT_HEADERS* ntHeaders
 			memset((LPVOID)(((DWORD_PTR)sectionVA + section->SizeOfRawData)), 0, zeroPadSize);
 		}
 	}
-	return 0;
 }
 
-int memoryProtection(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
+BOOL LdrpProtectImage(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
 
 	DWORD characteristic = 0;
 	DWORD permission = 0;
 	IMAGE_SECTION_HEADER* section = IMAGE_FIRST_SECTION(ntHeaders);
+	DWORD newProtect = 0;
 	for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++, section++) {
 
 		LPVOID sectionVA = (LPVOID)((DWORD_PTR)imageBase + section->VirtualAddress);
-		DWORD protect = section->Characteristics;
+		DWORD oldProtect = section->Characteristics;
 
-		BOOL executable = (protect & IMAGE_SCN_MEM_EXECUTE) != 0;
-		BOOL readable = (protect & IMAGE_SCN_MEM_READ) != 0;
-		BOOL writeable = (protect & IMAGE_SCN_MEM_WRITE) != 0;
-		if (!executable && !readable && !writeable)
-			protect = PAGE_NOACCESS;
+		BOOL executable = (oldProtect & IMAGE_SCN_MEM_EXECUTE) != 0;
+		BOOL readable = (oldProtect & IMAGE_SCN_MEM_READ) != 0;
+		BOOL writeable = (oldProtect & IMAGE_SCN_MEM_WRITE) != 0;
+		if (!oldProtect & IMAGE_SCN_MEM_EXECUTE && !readable && !writeable)
+			newProtect = PAGE_NOACCESS;
 		else if (!executable && !readable && writeable)
-			protect = PAGE_WRITECOPY;
+			newProtect = PAGE_WRITECOPY;
 		else if (!executable && readable && !writeable)
-			protect = PAGE_READONLY;
+			newProtect = PAGE_READONLY;
 		else if (!executable && readable && writeable)
-			protect = PAGE_READWRITE;
+			newProtect = PAGE_READWRITE;
 		else if (executable && !readable && !writeable)
-			protect = PAGE_EXECUTE;
+			newProtect = PAGE_EXECUTE;
 		else if (executable && !readable && writeable)
-			protect = PAGE_EXECUTE_WRITECOPY;
+			newProtect = PAGE_EXECUTE_WRITECOPY;
 		else if (executable && readable && !writeable)
-			protect = PAGE_EXECUTE_READ;
+			newProtect = PAGE_EXECUTE_READ;
 		else if (executable && readable && writeable)
-			protect = PAGE_EXECUTE_READWRITE;
+			newProtect = PAGE_EXECUTE_READWRITE;
 
-		if (protect & IMAGE_SCN_MEM_NOT_CACHED)
-			protect |= PAGE_NOCACHE;
+		if (oldProtect & IMAGE_SCN_MEM_NOT_CACHED)
+			newProtect |= PAGE_NOCACHE;
 
-		VirtualProtect(sectionVA, section->SizeOfRawData, protect, &protect);
-	}
-	return 0;
-
-}
-
-LPVOID imageBaseAlloc(BYTE* sourceBase, IMAGE_NT_HEADERS* ntHeaders) {
-
-	if (ntHeaders->Signature != IMAGE_NT_SIGNATURE || ntHeaders->OptionalHeader.SectionAlignment & 1) {
-		return NULL;
-	}
-	LPVOID imageBase = myVirtualAlloc((LPVOID)(ntHeaders->OptionalHeader.ImageBase), ntHeaders->OptionalHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	if (imageBase == NULL) {
-		// Allocation at preferred base address failed. Let's try to allocate to an OS-chosen location.
-		imageBase = myVirtualAlloc(NULL, ntHeaders->OptionalHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-
-		if (imageBase == NULL) {
-			return NULL;
+		BOOL protectStatus = myVirtualProtect(sectionVA, section->Misc.VirtualSize, newProtect, &oldProtect);
+		if (!protectStatus) {
+			return FALSE;
 		}
+		
 	}
-	return imageBase;
+	return TRUE;
+
 }
 
-int applyRelocations(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
+VOID LdrpRelocateImage(LPVOID imageBase) {
 
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
+
+	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
 	DWORD_PTR delta = (DWORD_PTR)imageBase - ntHeaders->OptionalHeader.ImageBase;
 	if (delta) {
+
 		IMAGE_BASE_RELOCATION* reloc = (IMAGE_BASE_RELOCATION*)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
 		while (reloc->VirtualAddress) {
 			WORD* relocEntries = (WORD*)((DWORD_PTR)reloc + sizeof(IMAGE_BASE_RELOCATION));
@@ -610,34 +662,34 @@ int applyRelocations(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
 				WORD offset = relocEntries[i] & 0xFFF;
 				switch (type) {
 
-				case IMAGE_REL_BASED_ABSOLUTE: {
-					break;
-				}
+					case IMAGE_REL_BASED_ABSOLUTE: {
+						break;
+					}
 
-				case IMAGE_REL_BASED_DIR64: {
-					// 64 bit addresses
-					ULONGLONG* patchAddr = (ULONGLONG*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
-					*patchAddr += delta;
-					break;
-				}
-				case IMAGE_REL_BASED_HIGHLOW: {
-					DWORD* patchAddr = (DWORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
-					*patchAddr += (DWORD)delta;
-					break;
-				}
-				case IMAGE_REL_BASED_HIGH: {
-					WORD* patchAddr = (WORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
-					*patchAddr += HIWORD((DWORD)delta);
-					break;
-				}
-				case IMAGE_REL_BASED_LOW: {
-					WORD* patchAddr = (WORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
-					*patchAddr += LOWORD((DWORD)delta);
-					break;
-				}
-				default: {
-					break;
-				}
+					case IMAGE_REL_BASED_DIR64: {
+						// 64 bit addresses
+						ULONGLONG* patchAddr = (ULONGLONG*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
+						*patchAddr += delta;
+						break;
+					}
+					case IMAGE_REL_BASED_HIGHLOW: {
+						DWORD* patchAddr = (DWORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
+						*patchAddr += (DWORD)delta;
+						break;
+					}
+					case IMAGE_REL_BASED_HIGH: {
+						WORD* patchAddr = (WORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
+						*patchAddr += HIWORD((DWORD)delta);
+						break;
+					}
+					case IMAGE_REL_BASED_LOW: {
+						WORD* patchAddr = (WORD*)((DWORD_PTR)imageBase + reloc->VirtualAddress + offset);
+						*patchAddr += LOWORD((DWORD)delta);
+						break;
+					}
+					default: {
+						break;
+					}
 				}
 			}
 			reloc = (IMAGE_BASE_RELOCATION*)((DWORD_PTR)reloc + reloc->SizeOfBlock);
@@ -647,24 +699,103 @@ int applyRelocations(LPVOID imageBase, IMAGE_NT_HEADERS* ntHeaders) {
 	return 0;
 }
 
+VOID LdrpPatchDataTableEntry(MYLDR_DATA_TABLE_ENTRY* dataTableEntry, LPVOID imageBase) {
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)(DWORD_PTR)imageBase;
+
+	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
+#ifdef _WIN64
+	MYPEB* pPeb = (MYPEB*)__readgsqword(0x60);
+#elif _WIN32
+	MYPEB* pPeb = (MYPEB*)__readfsdword(0x30);
+#endif
+
+	pPeb->ImageBaseAddress = (PVOID)imageBase;
+	dataTableEntry->EntryPoint = (PVOID)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.AddressOfEntryPoint);
+	dataTableEntry->SizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
+	dataTableEntry->TimeDateStamp = ntHeaders->FileHeader.TimeDateStamp;
+	dataTableEntry->DllBase = (PVOID)imageBase;
+}
+
+/*#ifdef _WIN64
+VOID LdrpResolveExceptions(imageBase) {
+
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
+
+	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
+	IMAGE_DATA_DIRECTORY exceptionDir = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
+	if (exceptionDir.Size) {
+		DWORD count = exceptionDir.Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY);
+		// Add RtlInsertInvertedFunctionTable support for x86
+		PRUNTIME_FUNCTION functionTable = (PRUNTIME_FUNCTION)((DWORD_PTR)imageBase + exceptionDir.VirtualAddress);
+		pRtlAddFunctionTable myRtlAddFunctionTable = (pRtlAddFunctionTable)myGetProcAddress(myGetModuleHandle("ntdll.dll"), "RtlAddFunctionTable");
+		BOOLEAN status = myRtlAddFunctionTable(functionTable, count, (DWORD64)imageBase);
+		if (status) {
+			printf("Registered %u entries in runtime function table: %p\n", count, functionTable);
+		}
+	}
+
+}
+//#endif _WIN64
+
+//VOID LdrpResolveLoadConfig(imageBase) {
+
+//	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
+
+//	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
+	//*/
+
 LPVOID executePE(BYTE* decryptedPE) {
 
 	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)decryptedPE;
 	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)(decryptedPE + dosHeader->e_lfanew);
+	if (ntHeaders->Signature != IMAGE_NT_SIGNATURE || ntHeaders->OptionalHeader.SectionAlignment & 1) {
+		return NULL;
+	}
 
-	LPVOID imageBase = imageBaseAlloc(decryptedPE, ntHeaders);
+	LPVOID imageBase = myVirtualAlloc((LPVOID)(ntHeaders->OptionalHeader.ImageBase), ntHeaders->OptionalHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (!imageBase) {
 
-	if (imageBase == NULL) {
-		fprintf(stderr, "Failed to allocate memory for PE image\n");
+		// Allocation at preferred base address failed. 
+		// We can only proceed if relocations exist in the PE headers
+
+		fprintf(stderr, "[-] Could not allocate memory at preferred base address: %p\n", (LPVOID)(ntHeaders->OptionalHeader.ImageBase));
+		printf("%d", ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+		if (!ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress) {
+
+			// No relocation directory, we cannot reliably load this image.
+			fprintf(stderr, "[-] No relocation directory found in PE header! We cannot reliably load this image.\n");
+			return NULL;
+
+		}
+		// Let's try to allocate to an OS-chosen location.
+		imageBase = myVirtualAlloc(NULL, ntHeaders->OptionalHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+		// we will relocate after mapping sections
+		if (!imageBase) {
+			return NULL;
+		}
 	}
 
 	printf("Allocation success! allocated image: %p\n", imageBase);
-	mapSections(imageBase, decryptedPE, ntHeaders);
-	// Handle relocations if not loaded at preferred base address
-	if (ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size) { // If Relocation Directory exists
-		applyRelocations(imageBase, ntHeaders);
+
+	LdrpMapSectionsOfImage(imageBase, decryptedPE);
+
+	if ((DWORD_PTR)imageBase != ntHeaders->OptionalHeader.ImageBase) {
+		// Handle relocations if not loaded at preferred base address
+
+		if (ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress) {
+
+			printf("[+] Relocation directory found in PE header!\n");
+
+			LdrpRelocateImage(imageBase);
+			printf("Successfully relocated image to: %p\n", imageBase);
+
+		}
 
 	}
+	
+	globalImageBase = imageBase; // Store the base address of the image globally for TLS handling and exception handling
+	globalSizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
+
 
 	IMAGE_IMPORT_DESCRIPTOR* importDesc = (IMAGE_IMPORT_DESCRIPTOR*)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
@@ -678,20 +809,19 @@ LPVOID executePE(BYTE* decryptedPE) {
 			fprintf(stderr, "Failed to load dependency: %s\n", (LPCSTR)((DWORD_PTR)imageBase + importDesc->Name));
 			return NULL;
 		}
-		if (origFirstThunk == NULL) {
-			// Handle cases where the Import Address Table serves as the Import Lookup Table
+		if (importDesc->OriginalFirstThunk == 0) {
+			// Handle cases where the Import Lookup Table also serves as the Import Address Table
 			origFirstThunk = firstThunk;
 		}
 
-
 		while (origFirstThunk->u1.AddressOfData) {
 			BYTE* dllBase = (BYTE*)hDll;
-
 			IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)dllBase);
 			IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)dllBase + dosHeader->e_lfanew);
-			IMAGE_IMPORT_BY_NAME* importName = (IMAGE_IMPORT_BY_NAME*)((DWORD_PTR)imageBase + origFirstThunk->u1.AddressOfData);
 			IMAGE_EXPORT_DIRECTORY* exportDir = (IMAGE_EXPORT_DIRECTORY*)((DWORD_PTR)dosHeader + ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress); // Export Address Table
 			PDWORD nameTable = (PDWORD)((DWORD_PTR)dllBase + exportDir->AddressOfNames); // Export Name Table
+
+			IMAGE_IMPORT_BY_NAME* importName = (IMAGE_IMPORT_BY_NAME*)((DWORD_PTR)imageBase + origFirstThunk->u1.AddressOfData);
 			PWORD namesOrdinal = (PWORD)((DWORD_PTR)(dllBase + exportDir->AddressOfNameOrdinals));
 			FARPROC functionAddr = NULL;
 
@@ -702,12 +832,14 @@ LPVOID executePE(BYTE* decryptedPE) {
 				ordinal = (WORD)(IMAGE_ORDINAL(firstThunk->u1.Ordinal) - exportDir->Base);
 
 			}
-
 			else {
-				// Function is imported by name, but Hint might give us an index to get the ordinal more easily without binary search
+
+				// check for hint
+				// credit: Windows Research Kernel
 				WORD Hint = importName->Hint;
-				name = dllBase + nameTable[Hint];
-				if (Hint < exportDir->NumberOfNames && strcmp(name, importName->Name) == 0) {
+
+				if ((ULONG)Hint < exportDir->NumberOfNames && !strcmp((PSZ)importName->Name, (PSZ)((PCHAR)dllBase + nameTable[Hint]))) {
+
 					ordinal = namesOrdinal[Hint];
 				}
 				else {
@@ -715,16 +847,24 @@ LPVOID executePE(BYTE* decryptedPE) {
 				}
 
 			}
+
+			// unified function for walking export table of dlls
 			functionAddr = LdrpResolveProcedureAddress(hDll, name, &ordinal);
-			if (ordinal) {
-				// resolve function name for debugging
-				for (size_t i = 0; i < exportDir->NumberOfNames; i++) {
-					if (namesOrdinal[i] == ordinal) {
-						name = dllBase + nameTable[i];
-					}
+
+			if (name) {
+
+				if (IsBadStringPtrA(name, MAX_PATH) == TRUE) {
+					system("pause");
 				}
+				printf("	[+] Resolved function address for %s: %p\n", name, functionAddr);
 			}
-			printf("	[+] Resolved function address for %s: %p\n", name, functionAddr);
+			else {
+
+				// resolve function name for debugging
+				//name = LdrpOrdinalToName(ordinal, dllBase, exportDir);
+				printf("	[+] Resolved function address for %u: %p\n", ordinal, functionAddr);
+			}
+
 			firstThunk->u1.Function = (DWORD_PTR)functionAddr; // Populating IAT with resolved addresses after resolving import names
 			origFirstThunk++;
 			firstThunk++;
@@ -744,6 +884,10 @@ LPVOID executePE(BYTE* decryptedPE) {
 			IMAGE_THUNK_DATA* origFirstThunk = (IMAGE_THUNK_DATA*)((DWORD_PTR)imageBase + delayDirectory->ImportNameTableRVA);
 			const char* dllName = (const char*)((DWORD_PTR)imageBase + delayDirectory->DllNameRVA);
 			HMODULE module = MyLoadLibrary(dllName);
+			if (!module) {
+				fprintf(stderr, "Failed to load delayed dependency: %s\n", dllName);
+				return NULL;
+			}
 			while (origFirstThunk->u1.AddressOfData) {
 
 				BYTE* dllBase = (BYTE*)module;
@@ -767,7 +911,9 @@ LPVOID executePE(BYTE* decryptedPE) {
 				else {
 					name = importName->Name;
 				}
-
+				if (ordinal) {
+					name = LdrpOrdinalToName(ordinal, dllBase, exportDir);
+				}
 				//printf("Found function imported by name: %s, position: %d\n", importName->Name, ordinal);
 				functionAddr = LdrpResolveProcedureAddress(module, name, &ordinal);
 
@@ -782,39 +928,39 @@ LPVOID executePE(BYTE* decryptedPE) {
 
 	}
 
-	printf("\nEditing section protections...\n\n");
-	// setting memory protections after mapping
+	IMAGE_LOAD_CONFIG_DIRECTORY* configDir = (IMAGE_LOAD_CONFIG_DIRECTORY*)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress);
+	if (configDir->SecurityCookie) {
+		// Get the security cookie from the load config directory
+#ifdef _WIN64
+#define COOKIE_MAX 0x0000FFFFFFFFFFFFll
+#define DEFAULT_SECURITY_COOKIE 0x00002B992DDFA232ll
+#else
+#define DEFAULT_SECURITY_COOKIE 0xBB40E64E
+#endif
+		if ((configDir->SecurityCookie == DEFAULT_SECURITY_COOKIE) || (configDir->SecurityCookie == 0)) {
+			ULONG_PTR newCookie = (ULONG_PTR)GetTickCount64() ^ GetCurrentProcessId();
+#ifdef WIN64
+			if (newCookie > COOKIE_MAX) {
+				newCookie >>= 16;
 
-	printf("Success!...\n\n");
-
-
-
-	// now it's the final steps
-	// flush the instruction cache
-	BOOL flushCache = FlushInstructionCache(GetCurrentProcess(), NULL, 0);
-	// handle TLS calllbacks
-
-	IMAGE_DATA_DIRECTORY tlsDir = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS];
-	if (tlsDir.Size) {
-
-		IMAGE_TLS_DIRECTORY* tlsDirectory = (IMAGE_TLS_DIRECTORY*)((DWORD_PTR)imageBase + tlsDir.VirtualAddress);
-		PIMAGE_TLS_CALLBACK* callback = (PIMAGE_TLS_CALLBACK*)tlsDirectory->AddressOfCallBacks;
-		PDWORD indexAddr = (PDWORD)tlsDirectory->AddressOfIndex;
-		DWORD index = GetTlsIndex(myGetModuleHandle(NULL)); // this is essentially the dreaded "TlsResolver" in fatpack
-		InitializeTlsIndex(imageBase, index);
-		InitializeTlsData(imageBase, index);
-		if (callback) {
-			while (*callback) {
-				// Execute each TLS callback with DLL_PROCESS_ATTACH
-				(*callback)(imageBase, DLL_PROCESS_ATTACH, NULL);
-				callback++;
 			}
+#endif
+			configDir->SecurityCookie = newCookie;
+
 		}
 	}
-	DWORD_PTR EntryPoint = (DWORD_PTR)imageBase + ntHeaders->OptionalHeader.AddressOfEntryPoint;
+	if (configDir->SEHandlerTable && configDir->SEHandlerCount) {
+		// Safe Exception Handler Table
+		// Safe Exception Handler Count
+
+		//*FunctionTable = (PVOID)configDir->SEHandlerTable;
+		//*TableSize = configDir->SEHandlerCount;
+		// Register a custom vectored exception handler to support manual mapped x86 SEH (otherwise invalidated by RtlIValidHandler
+	}
+
 #ifdef _WIN64
 	IMAGE_DATA_DIRECTORY exceptionDir = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
-	if (exceptionDir.Size) {
+	if (exceptionDir.VirtualAddress && exceptionDir.Size) {
 		DWORD count = exceptionDir.Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY);
 		// Add RtlInsertInvertedFunctionTable support for x86
 		PRUNTIME_FUNCTION functionTable = (PRUNTIME_FUNCTION)((DWORD_PTR)imageBase + exceptionDir.VirtualAddress);
@@ -824,8 +970,60 @@ LPVOID executePE(BYTE* decryptedPE) {
 			printf("Registered %u entries in runtime function table: %p\n", count, functionTable);
 		}
 	}
-	printf("Original entry point address: %p\n", (BYTE*)(EntryPoint));
+
+#elif _WIN32
+
+	HMODULE hModule = myGetModuleHandle("ntdll.dll");
+
+	BOOL patchStatus = PatchRtlIsValidHandler(hModule);
+	if (!patchStatus) {
+
+		fprintf(stderr, "[-] Failure patching RtlIsValidHandler!");
+		return 1;
+	}
+
+	printf("Successfully patched RtlIsValidHandler for x86 SEH support\n");
 #endif
+
+	printf("\nEditing section protections...\n\n");
+
+	BOOL protectStatus = LdrpProtectImage(imageBase, ntHeaders); // setting memory protections after mapping
+
+	if (!protectStatus) {
+		fprintf(stderr, "[-] Could not protect one or more memory sections!\n");
+		return NULL;
+	}
+	printf("Success!...\n\n");
+	// setting memory protections after mapping
+
+
+	// now it's the final steps
+	// flush the instruction cache
+	BOOL flushCache = FlushInstructionCache(GetCurrentProcess(), NULL, 0);
+
+	// handle TLS calllbacks
+
+
+	IMAGE_DATA_DIRECTORY tlsDir = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS];
+	if (tlsDir.Size) {
+
+		IMAGE_TLS_DIRECTORY* tlsDirectory = (IMAGE_TLS_DIRECTORY*)((DWORD_PTR)imageBase + tlsDir.VirtualAddress);
+		PIMAGE_TLS_CALLBACK* callback = (PIMAGE_TLS_CALLBACK*)tlsDirectory->AddressOfCallBacks;
+		//PDWORD indexAddr = (PDWORD)tlsDirectory->AddressOfIndex;
+		//DWORD index = GetTlsIndex(myGetModuleHandle(NULL)); // this is essentially the dreaded "TlsResolver" in fatpack
+		//InitializeTlsIndex(imageBase, index);
+		//InitializeTlsData(imageBase, index);
+		if (callback) {
+			while (*callback) {
+				// Execute each TLS callback with DLL_PROCESS_ATTACH
+				(*callback)(imageBase, DLL_PROCESS_ATTACH, NULL);
+				callback++;
+			}
+		}
+	}
+	DWORD_PTR EntryPoint = (DWORD_PTR)imageBase + ntHeaders->OptionalHeader.AddressOfEntryPoint;
+	printf("Original entry point address: %p\n", (BYTE*)(EntryPoint));
+
 #ifdef _WIN64
 	MYPEB* pPeb = (MYPEB*)__readgsqword(0x60);
 #elif _WIN32
@@ -835,22 +1033,34 @@ LPVOID executePE(BYTE* decryptedPE) {
 	LIST_ENTRY* ModuleListHead = &loaderData->InMemoryOrderModuleList;
 	LIST_ENTRY* ModuleEntry = (LIST_ENTRY*)ModuleListHead->Flink;
 	MYLDR_DATA_TABLE_ENTRY* dataTableEntry = CONTAINING_RECORD(ModuleEntry, MYLDR_DATA_TABLE_ENTRY, InMemoryOrderLinks);
-	pPeb->ImageBaseAddress = (PVOID)ntHeaders->OptionalHeader.ImageBase;
-	dataTableEntry->EntryPoint = (PVOID)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.AddressOfEntryPoint);
-	dataTableEntry->SizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
-	dataTableEntry->TimeDateStamp = ntHeaders->FileHeader.TimeDateStamp;
-	dataTableEntry->DllBase = (PVOID)imageBase;
-	dataTableEntry->TlsIndex = (USHORT)TLS_OUT_OF_INDEXES;
 
-	return (LPVOID)EntryPoint;
+	LdrpPatchDataTableEntry(dataTableEntry, imageBase);
+	BOOL insertStatus = myRtlInsertInvertedFunctionTable(imageBase, ntHeaders->OptionalHeader.SizeOfImage);
+	if (!insertStatus) {
+		fprintf(stderr, "[-] Failure registering Inverted Function Table entry!");
+	}
+	printf("Successfully registered Inverted Function Table entry!");
+
+	return imageBase;
 }
 
 int main() {
 #ifdef DEBUG_STUB
-
-	size_t unpacked_size = 441198;
-
-	LPVOID EntryPoint = executePE(decompressPayload(unpacked_size));
+	//size_t unpacked_size = 441198;
+	FILE* fuck = fopen("C:\\Users\\tamar\\Downloads\\packed_files\\vscode_[unknowncheats.me]_.exe", "rb");
+	fseek(fuck, 0L, SEEK_END);
+	size_t unpacked_size = ftell(fuck);
+	unsigned char* file_debug = malloc(unpacked_size);
+	if (file_debug == NULL) {
+		return 1;
+	}
+	rewind(fuck);
+	fread(file_debug, sizeof(unsigned char), unpacked_size, fuck);
+	size_t packed_debugsize = 0;
+	unsigned char* packed_debug = compressAndEncrypt(file_debug, unpacked_size, &packed_debugsize);
+	//LPVOID EntryPoint = executePE(decompressPayload(packed_payload, unpacked_size, packed_size));
+	LPVOID imageBase = executePE(decompressPayload(packed_debug, unpacked_size, packed_debugsize));
+	//entryPointCalled = TRUE;
 #else 
 
 	ppacked_section packed_section = findPackedSection();
@@ -862,11 +1072,11 @@ int main() {
 	unsigned char* packed_payload = packed_section->payload;
 	if (packed_section->lockFlag) {
 		// payload locking is enabled
-		unsigned char* inputKey = NULL;
-		printf("This executable file is locked with a password for security reasons. Enter the password to unlock the program (maximum 32 characters):\n\n");
+		unsigned char inputKey[32] = { 0 };
+		printf("This oldProtect & IMAGE_SCN_MEM_EXECUTE file is locked with a password for security reasons. Enter the password to unlock the program (maximum 32 characters):\n\n");
 
-		if (scanf_s("%u", inputKey)) {
-			uint32_t key[4] = 0;
+		if (scanf_s("%s", inputKey, (unsigned)_countof(inputKey))) {
+			uint32_t key[4] = { 0 };
 			for (int i = 0; i < 4; i++) {
 				key[i] = strtoul(inputKey, 0, 10);
 			}
@@ -885,11 +1095,15 @@ int main() {
 	LPVOID EntryPoint = executePE(decryptedPE);
 
 #endif
-	if (!EntryPoint) {
+	if (!imageBase) {
 		return 1;
 	}
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*)((DWORD_PTR)imageBase);
+	IMAGE_NT_HEADERS* ntHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)imageBase + dosHeader->e_lfanew);
 
-	int (*ep)() = EntryPoint;
+	LPVOID (*ep)() = (LPVOID)((DWORD_PTR)imageBase + ntHeaders->OptionalHeader.AddressOfEntryPoint);
+	printf("\n%p\n", imageBase);
+	system("pause");
 
 	int result = ep();
 
